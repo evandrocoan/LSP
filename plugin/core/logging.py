@@ -1,6 +1,6 @@
+import sys
 import traceback
 from .settings import settings, PLUGIN_NAME
-
 
 def debug(*args):
     """Print args to the console if the "debug" setting is True."""
@@ -20,4 +20,13 @@ def server_log(binary, *args):
 
 def printf(*args, prefix=PLUGIN_NAME):
     """Print args to the console, prefixed by the plugin name."""
-    print(prefix + ":", *args)
+    try:
+        print(prefix + ":", *args)
+
+    except:
+        sys.stderr.write("\n"*10)
+        print(prefix + ":", str(args))
+
+        with open("D:/User/Downloads/LSP_issues_249.txt", "a", newline='\n') as text_file:
+            text_file.write(prefix + ":" + str(args)+"\n")
+
