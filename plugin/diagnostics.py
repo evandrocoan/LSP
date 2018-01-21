@@ -242,9 +242,14 @@ def update_diagnostics_panel(window: sublime.Window):
         if diagnostics_by_file:
             to_render = []
             for file_path, source_diagnostics in diagnostics_by_file.items():
-                relative_file_path = os.path.relpath(file_path, base_dir) if base_dir else file_path
-                if source_diagnostics:
-                    to_render.append(format_diagnostics(relative_file_path, source_diagnostics))
+                # print( "base_dir: " + base_dir )
+                # print( "file_path: " + file_path )
+                try:
+                    relative_file_path = os.path.relpath(file_path, base_dir) if base_dir else file_path
+                    if source_diagnostics:
+                        to_render.append(format_diagnostics(relative_file_path, source_diagnostics))
+                except ValueError:
+                    pass
             panel.run_command("lsp_update_panel", {"characters": "\n".join(to_render)})
             if settings.auto_show_diagnostics_panel and not active_panel:
                 window.run_command("show_panel",
