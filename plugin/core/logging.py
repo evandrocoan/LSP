@@ -23,10 +23,10 @@ def printf(*args, prefix=PLUGIN_NAME):
     try:
         print(prefix + ":", *args)
 
-    except:
+    except Exception as error:
         sys.stderr.write("\n"*10)
         print(prefix + ":", str(args))
 
         with open("D:/User/Downloads/LSP_issues_249.txt", "a", newline='\n') as text_file:
-            text_file.write(prefix + ":" + str(args)+"\n")
+            text_file.write(prefix + ":" + str(args) + ", Exception: " + str( error ) + "\n")
 
