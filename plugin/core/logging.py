@@ -25,8 +25,17 @@ def printf(*args, prefix=PLUGIN_NAME):
 
     except Exception as error:
         sys.stderr.write("\n"*10)
-        print(prefix + ":", str(args))
+        print(str(prefix))
+        print(":")
+        print(str(args))
 
         with open("D:/User/Downloads/LSP_issues_249.txt", "a", newline='\n') as text_file:
-            text_file.write(prefix + ":" + str(args) + ", Exception: " + str( error ) + "\n")
+            text_file.write(str(prefix))
+            text_file.write(":")
+            text_file.write("\n")
+            text_file.write(str(args))
+            text_file.write(", Exception: ")
+            text_file.write("\n")
+            text_file.write(str(error))
+            text_file.write("\n")
 
