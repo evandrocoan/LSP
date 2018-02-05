@@ -1,6 +1,10 @@
 import sublime
 
+from debug_tools import getLogger
+
 PLUGIN_NAME = 'LSP'
+log = getLogger(1, PLUGIN_NAME, level="ERROR", function=False, tick=False)
+
 
 try:
     from typing import List, Optional, Dict
@@ -81,7 +85,11 @@ class Settings(object):
         self.log_server = read_bool_setting(settings_obj, "log_server", True)
         self.log_stderr = read_bool_setting(settings_obj, "log_stderr", False)
         self.log_payloads = read_bool_setting(settings_obj, "log_payloads", False)
+        self.setLevel(self.log_debug, 2)
 
+    @staticmethod
+    def setLevel(enalbed, level):
+        log.debug_level = log.debug_level | level if enalbed else log.debug_level & ~level
 
 class ClientConfigs(object):
 
