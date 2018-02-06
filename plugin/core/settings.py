@@ -64,7 +64,7 @@ class Settings(object):
         self.log_server = True
         self.log_stderr = False
         self.log_payloads = False
-        self.file_path = None
+        self.file_path = ""
 
     def update(self, settings_obj: sublime.Settings):
         self.show_status_messages = read_bool_setting(settings_obj, "show_status_messages", True)
@@ -88,7 +88,7 @@ class Settings(object):
         self.log_stderr = read_bool_setting(settings_obj, "log_stderr", False)
         self.log_payloads = read_bool_setting(settings_obj, "log_payloads", False)
         self.setLevel(self.log_debug, 2)
-        self.setLogFile(read_str_setting(settings_obj, "log_file", None))
+        self.setLogFile(read_str_setting(settings_obj, "log_file", ""))
 
     def setLogFile(self, file_path):
         file_path = file_path.strip()
