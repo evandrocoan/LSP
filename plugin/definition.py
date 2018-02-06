@@ -3,7 +3,7 @@ import sublime
 from .core.clients import LspTextCommand
 from .core.clients import client_for_view
 from .core.protocol import Request, Point
-from .core.documents import get_document_position, get_position
+from .core.documents import get_document_position, get_position, is_at_word
 from .core.url import uri_to_filename
 from .core.settings import log
 
