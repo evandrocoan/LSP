@@ -96,10 +96,13 @@ class Settings(object):
 
     @staticmethod
     def setLogFile(file_path):
-        if os.path.isabs(file_path):
-            log.setup(file_path)
+        if file_path:
+            if os.path.isabs(file_path):
+                log.setup(file_path)
+            else:
+                log.setup(os.path.join(sublime.packages_path(), "User", file_path))
         else:
-            log.setup(os.path.join(sublime.packages_path(), "User", file_path))
+            log.setup(None)
 
 
 class ClientConfigs(object):
