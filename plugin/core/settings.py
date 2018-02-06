@@ -1,3 +1,4 @@
+import os
 import sublime
 
 from debug_tools import getLogger
@@ -85,11 +86,21 @@ class Settings(object):
         self.log_server = read_bool_setting(settings_obj, "log_server", True)
         self.log_stderr = read_bool_setting(settings_obj, "log_stderr", False)
         self.log_payloads = read_bool_setting(settings_obj, "log_payloads", False)
+        self.log_file = read_str_setting(settings_obj, "log_file", "")
         self.setLevel(self.log_debug, 2)
+        self.setLogFile(self.log_file)
 
     @staticmethod
-    def setLevel(enalbed, level):
-        log.debug_level = log.debug_level | level if enalbed else log.debug_level & ~level
+    def setLevel(enabled, level):
+        log.debug_level = log.debug_level | level if enabled else log.debug_level & ~level
+
+    @staticmethod
+    def setLogFile(file_path):
+        if os.path.isabs(file_path):
+            log.setup(file_path)
+        else:
+            log.setup(os.path.join(sublime.packages_path(), "User", file_path) )
+
 
 class ClientConfigs(object):
 
@@ -107,7 +118,7 @@ class ClientConfigs(object):
         self.all = read_client_configs(self._global_settings, self._default_settings)
 
         client_enableds = list("=".join([config.name, str(config.enabled)]) for config in self.all)
-        print(PLUGIN_NAME + ': global clients: ' + ", ".join(client_enableds))
+        log(1, 'global clients: %s', ", ".join(client_enableds))
 
     def _set_enabled(self, config_name: str, is_enabled: bool):
         if _settings_obj:
