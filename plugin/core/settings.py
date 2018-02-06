@@ -91,6 +91,8 @@ class Settings(object):
         self.setLogFile(read_str_setting(settings_obj, "log_file", None))
 
     def setLogFile(self, file_path):
+        file_path = file_path.strip()
+
         if file_path:
             if os.path.isabs(file_path):
                 self._setLogFile(file_path)
