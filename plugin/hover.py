@@ -5,7 +5,7 @@ import webbrowser
 
 from .core.configurations import is_supported_syntax
 from .core.diagnostics import get_point_diagnostics
-from .core.clients import LspTextCommand
+from .core.clients import LspTextCommand, client_for_view
 from .core.protocol import Request
 from .core.documents import get_document_position
 from .core.popups import popup_css, popup_class
@@ -33,26 +33,25 @@ class LspHoverCommand(LspTextCommand):
     def __init__(self, view):
         super().__init__(view)
 
-    def is_enabled(self, event=None):
-        # TODO: check what kind of scope we're in.
-        return self.has_client_with_capability('hoverProvider')
+    def is_likely_at_symbol(self, point):
+        word_at_sel = self.view.classify(point)
+        return word_at_sel & SUBLIME_WORD_MASK and not self.view.match_selector(point, NO_HOVER_SCOPES)
 
     def run(self, edit, point=None):
         if point is None:
             point = self.view.sel()[0].begin()
-        self.request_symbol_hover(point)
+        if self.is_likely_at_symbol(point):
+            self.request_symbol_hover(point)
         point_diagnostics = get_point_diagnostics(self.view, point)
         if point_diagnostics:
             self.show_hover(point, self.diagnostics_content(point_diagnostics))
 
     def request_symbol_hover(self, point):
-        if self.view.match_selector(point, NO_HOVER_SCOPES):
-            return
-        word_at_sel = self.view.classify(point)
-        if word_at_sel & SUBLIME_WORD_MASK:
+        client = client_for_view(self.view)
+        if client and client.has_capability('hoverProvider'):
             document_position = get_document_position(self.view, point)
             if document_position:
-                self.client_for_view.send_request(
+                client.send_request(
                     Request.hover(document_position),
                     lambda response: self.handle_response(response, point))
 

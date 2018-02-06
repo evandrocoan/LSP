@@ -1,6 +1,5 @@
 import sublime
-
-from sublime_plugin import TextCommand
+import sublime_plugin
 
 from .configurations import config_for_scope, is_supported_view
 from .protocol import Request
@@ -35,7 +34,7 @@ class ConfigState(object):
         self.client = client
 
 
-class LspTextCommand(TextCommand):
+class LspTextCommand(sublime_plugin.TextCommand):
     def __init__(self, view):
         super().__init__(view)
 
@@ -45,7 +44,6 @@ class LspTextCommand(TextCommand):
     def has_client_with_capability(self, capability):
         client = client_for_view(self.view)
         if client and client.has_capability(capability):
-            self.client_for_view = client
             return True
         return False
 
