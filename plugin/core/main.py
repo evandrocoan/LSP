@@ -257,7 +257,7 @@ def start_window_client(view: sublime.View, window: sublime.Window, config: Clie
 
 
 def start_server(server_binary_args, working_dir, env):
-    log(2, "starting %s, working_dir: %s, env: %s", server_binary_args, working_dir, env)
+    log(2, "starting %s, working_dir: %s", server_binary_args, working_dir)
     si = None
     if os.name == "nt":
         si = subprocess.STARTUPINFO()  # type: ignore
