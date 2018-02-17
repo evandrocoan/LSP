@@ -12,12 +12,18 @@ except ImportError:
     pass
 
 
+from debug_tools import getLogger
+
+
 from .core.clients import client_for_view
 from .core.documents import get_document_position, purge_did_change
 from .core.configurations import is_supported_syntax, config_for_scope
 from .core.protocol import Request
 from .core.popups import popup_css, popup_class
-from .core.settings import settings, log
+from .core.settings import settings
+
+
+log = getLogger(1, __package__)
 
 
 class SignatureHelpListener(sublime_plugin.ViewEventListener):

@@ -11,12 +11,14 @@ except ImportError:
 import sublime_plugin
 import sublime
 
+from debug_tools import getLogger
+
 from .url import filename_to_uri
 from .protocol import (
     Request, Notification
 )
 from .settings import (
-    ClientConfig, settings, load_settings, unload_settings, log
+    ClientConfig, settings, load_settings, unload_settings
 )
 from .rpc import attach_tcp_client, attach_stdio_client
 from .workspace import get_project_path
@@ -34,6 +36,9 @@ from .documents import (
 )
 from .diagnostics import handle_client_diagnostics, remove_diagnostics
 from .edit import apply_workspace_edit
+
+
+log = getLogger(1, __package__)
 
 
 def startup():

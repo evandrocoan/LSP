@@ -2,9 +2,9 @@ import os
 import sublime
 
 from debug_tools import getLogger
+log = getLogger(1, __package__)
 
 PLUGIN_NAME = 'LSP'
-log = getLogger(1, PLUGIN_NAME, level="ERROR", function=False, tick=False)
 
 
 try:

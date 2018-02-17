@@ -1,6 +1,8 @@
 import sublime
 
-from .settings import ClientConfig, client_configs, log
+from debug_tools import getLogger
+
+from .settings import ClientConfig, client_configs
 from .workspace import get_project_config
 
 assert ClientConfig
@@ -10,6 +12,9 @@ try:
     assert Any and List and Dict and Tuple and Callable and Optional
 except ImportError:
     pass
+
+
+log = getLogger(1, __package__)
 
 
 window_client_configs = dict()  # type: Dict[int, List[ClientConfig]]

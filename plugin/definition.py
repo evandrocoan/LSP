@@ -1,11 +1,15 @@
 import sublime
 
+from debug_tools import getLogger
+
 from .core.clients import LspTextCommand
 from .core.clients import client_for_view
 from .core.protocol import Request, Point
 from .core.documents import get_document_position, get_position, is_at_word
 from .core.url import uri_to_filename
-from .core.settings import log
+
+
+log = getLogger(1, __package__)
 
 
 class LspSymbolDefinitionCommand(LspTextCommand):

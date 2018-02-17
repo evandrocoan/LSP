@@ -1,3 +1,7 @@
+
+from debug_tools import getLogger
+log = getLogger(1, __package__)
+
 from .plugin.core.main import startup, shutdown, LspStartClientCommand, LspRestartClientCommand
 
 # TODO: narrow down imports

@@ -2,10 +2,14 @@ import os
 import sublime
 import sublime_plugin
 
+from debug_tools import getLogger
+
 from .url import uri_to_filename
 from .protocol import Range
-from .settings import log
 from .workspace import get_project_path
+
+
+log = getLogger(1, __package__)
 
 
 def apply_workspace_edit(window, params):

@@ -1,13 +1,15 @@
 import sublime
 import sublime_plugin
 
+from debug_tools import getLogger
+
 from .configurations import config_for_scope, is_supported_view
 from .protocol import Request
 from .workspace import get_project_path
 
 # typing only
 from .rpc import Client
-from .settings import ClientConfig, log
+from .settings import ClientConfig
 assert Client and ClientConfig
 
 
@@ -16,6 +18,9 @@ try:
     assert Any and List and Dict and Tuple and Callable and Optional and Set
 except ImportError:
     pass
+
+
+log = getLogger(1, __package__)
 
 
 clients_by_window = {}  # type: Dict[int, Dict[str, ConfigState]]

@@ -11,8 +11,13 @@ try:
 except ImportError:
     pass
 
-from .settings import settings, log
+from debug_tools import getLogger
+
+from .settings import settings
 from .protocol import Request, Notification
+
+
+log = getLogger(1, __package__)
 
 
 ContentLengthHeader = b"Content-Length: "

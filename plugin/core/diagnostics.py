@@ -1,6 +1,7 @@
 import sublime
 
-from .settings import log
+from debug_tools import getLogger
+
 from .url import uri_to_filename
 from .protocol import Diagnostic
 from .events import Events
@@ -12,6 +13,9 @@ try:
     assert Any and List and Dict and Tuple and Callable and Optional
 except ImportError:
     pass
+
+
+log = getLogger(1, __package__)
 
 
 window_file_diagnostics = dict(

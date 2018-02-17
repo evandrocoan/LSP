@@ -6,7 +6,8 @@ try:
 except ImportError:
     pass
 
-from .settings import log
+from debug_tools import getLogger
+log = getLogger(1, __package__)
 
 
 def get_project_path(window: sublime.Window) -> 'Optional[str]':
