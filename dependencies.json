@@ -1,7 +1,17 @@
 {
     "windows": {
         ">3000": [
-            "python-pywin32"
+            "python-pywin32",
+            "pygments",
+            "python-markdown",
+            "mdpopups",
+            "python-jinja2",
+            "markupsafe",
+            "pymdownx",
+            "pyyaml",
+            "PortalockerFiles",
+            "ConcurrentLogHandler",
+            "DebugTools"
         ]
     },
     "*": {
