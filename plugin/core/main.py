@@ -38,7 +38,7 @@ from .diagnostics import handle_client_diagnostics, remove_diagnostics
 from .edit import apply_workspace_edit
 
 
-log = getLogger(1, __package__)
+log = getLogger(1, __name__)
 
 
 def startup():

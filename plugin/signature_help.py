@@ -23,7 +23,7 @@ from .core.popups import popup_css, popup_class
 from .core.settings import settings
 
 
-log = getLogger(1, __package__)
+log = getLogger(1, __name__)
 
 
 class SignatureHelpListener(sublime_plugin.ViewEventListener):

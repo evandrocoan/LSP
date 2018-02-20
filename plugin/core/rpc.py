@@ -13,11 +13,11 @@ except ImportError:
 
 from debug_tools import getLogger
 
-from .settings import settings
+from .settings import settings, PLUGIN_NAME
 from .protocol import Request, Notification
 
 
-log = getLogger(1, __package__)
+log = getLogger(1, __name__)
 
 
 ContentLengthHeader = b"Content-Length: "
@@ -81,7 +81,7 @@ def log_stream(process, stream):
                         decoded = content.decode("UTF-8")
                     except UnicodeDecodeError:
                         decoded = content
-                    log(1, "server: %s", decoded.strip())
+                    log.clean(1, "%s server: %s", PLUGIN_NAME, decoded.strip())
             except IOError as err:
                 log.exception("Failure reading stderr")
                 return

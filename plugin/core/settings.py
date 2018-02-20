@@ -2,7 +2,7 @@ import os
 import sublime
 
 from debug_tools import getLogger
-log = getLogger(1, __package__)
+log = getLogger(1, __name__)
 
 PLUGIN_NAME = 'LSP'
 

@@ -9,7 +9,7 @@ from .protocol import Range
 from .workspace import get_project_path
 
 
-log = getLogger(1, __package__)
+log = getLogger(1, __name__)
 
 
 def apply_workspace_edit(window, params):

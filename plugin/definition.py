@@ -9,7 +9,7 @@ from .core.documents import get_document_position, get_position, is_at_word
 from .core.url import uri_to_filename
 
 
-log = getLogger(1, __package__)
+log = getLogger(1, __name__)
 
 
 class LspSymbolDefinitionCommand(LspTextCommand):

@@ -1,6 +1,6 @@
 
 from debug_tools import getLogger
-log = getLogger(1, __package__)
+log = getLogger(1, __name__)
 
 from .plugin.core.main import startup, shutdown, LspStartClientCommand, LspRestartClientCommand
 

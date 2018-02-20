@@ -18,7 +18,7 @@ from .configurations import config_for_scope, is_supported_view, is_supported_sy
 from .clients import client_for_view, client_for_closed_view, check_window_unloaded
 from .events import Events
 
-log = getLogger(1, __package__)
+log = getLogger(1, __name__)
 
 SUBLIME_WORD_MASK = 515
 

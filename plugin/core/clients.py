@@ -20,7 +20,7 @@ except ImportError:
     pass
 
 
-log = getLogger(1, __package__)
+log = getLogger(1, __name__)
 
 
 clients_by_window = {}  # type: Dict[int, Dict[str, ConfigState]]

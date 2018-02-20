@@ -14,7 +14,7 @@ except ImportError:
     pass
 
 
-log = getLogger(1, __package__)
+log = getLogger(1, __name__)
 
 
 window_client_configs = dict()  # type: Dict[int, List[ClientConfig]]

@@ -17,7 +17,7 @@ from .core.configurations import is_supported_syntax
 from .core.documents import get_document_position, purge_did_change
 
 
-log = getLogger(1, __package__)
+log = getLogger(1, __name__)
 
 
 NO_COMPLETION_SCOPES = 'comment, string'

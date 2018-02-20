@@ -15,7 +15,7 @@ except ImportError:
     pass
 
 
-log = getLogger(1, __package__)
+log = getLogger(1, __name__)
 
 
 window_file_diagnostics = dict(
