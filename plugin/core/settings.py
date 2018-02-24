@@ -91,7 +91,7 @@ class Settings(object):
 
     @staticmethod
     def setLevel(enabled, level):
-        log.debug_level = log.debug_level | level if enabled else log.debug_level & ~level
+        log._debug_level = log.debug_level | level if enabled else log.debug_level & ~level
 
     @staticmethod
     def setLogFile(file_path):

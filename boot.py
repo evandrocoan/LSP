@@ -1,6 +1,6 @@
 
 from debug_tools import getLogger
-log = getLogger(1, __name__)
+log = getLogger(1, "LSP")
 
 from .plugin.core.main import startup, shutdown, LspStartClientCommand, LspRestartClientCommand
 
@@ -28,3 +28,4 @@ def plugin_loaded():
 
 def plugin_unloaded():
     shutdown()
+
