@@ -78,6 +78,17 @@
       "syntaxes": ["Packages/C++/C.sublime-syntax", "Packages/C++/C++.sublime-syntax", "Packages/Objective-C/Objective-C.sublime-syntax", "Packages/Objective-C/Objective-C++.sublime-syntax"],
       "languageId": "objc++"
     },
+    "cquery":
+    {
+      "command": ["cquery", "--language-server", "--log-all-to-stderr"],
+      "scopes": ["source.c", "source.c++", "source.objc", "source.objc++"],
+      "syntaxes": ["Packages/C++/C.sublime-syntax", "Packages/C++/C++.sublime-syntax", "Packages/Objective-C/Objective-C.sublime-syntax", "Packages/Objective-C/Objective-C++.sublime-syntax"],
+      "languageId": "objc++",
+      "initializationOptions":
+      {
+        "cacheDirectory": "/tmp/cquery",
+      }
+    },
     "reason":
     {
       "command": ["ocaml-language-server", "--stdio"],
