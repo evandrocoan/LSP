@@ -9,4 +9,9 @@ def filename_to_uri(path: str) -> str:
 
 
 def uri_to_filename(uri: str) -> str:
-    return url2pathname(urlparse(uri).path)
+    # Sending extra slash on URI on Windows with MSYS2
+    # https://github.com/cquery-project/cquery/issues/492
+    # print("'uri': '%s'" % urlparse(uri).path )
+    # print("urlparse(uri).path:               %s" % urlparse(uri).path )
+    # print("url2pathname(urlparse(uri).path): %s" % url2pathname(urlparse(uri).path) )
+    return url2pathname(urlparse(uri).path).strip('\\')

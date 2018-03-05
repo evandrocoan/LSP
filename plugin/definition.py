@@ -38,7 +38,7 @@ class LspSymbolDefinitionCommand(LspTextCommand):
             file_path = uri_to_filename(location.get("uri"))
             start = Point.from_lsp(location['range']['start'])
             file_location = "{}:{}:{}".format(file_path, start.row + 1, start.col + 1)
-            log(2, "opening location %s", location)
+            log(2, "opening location %s <%s>", location, file_location)
             window.open_file(file_location, sublime.ENCODED_POSITION)
             # TODO: can add region here.
         else:
