@@ -131,9 +131,12 @@ def handle_initialize_result(result, client, window, config):
         "window/showMessageRequest",
         lambda params: handle_message_request(params))
 
-    client.on_notification(
-        "textDocument/publishDiagnostics",
-        lambda params: handle_client_diagnostics(window, config.name, params))
+    if config.settings.get("disable_diagnostics", False):
+        log(2, "Warning, diagnostics settings disabled: %s", config.settings)
+    else:
+        client.on_notification(
+            "textDocument/publishDiagnostics",
+            lambda params: handle_client_diagnostics(window, config.name, params))
 
     client.on_notification(
         "window/showMessage",
