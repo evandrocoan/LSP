@@ -1,6 +1,13 @@
 
+import os
+
+CURRENT_PACKAGE_FILE   = os.path.dirname( os.path.realpath( __file__ ) )
+PACKAGE_ROOT_DIRECTORY = CURRENT_PACKAGE_FILE.replace( ".py", "" )
+CURRENT_PACKAGE_NAME   = os.path.basename( PACKAGE_ROOT_DIRECTORY )
+
 from debug_tools import getLogger
-log = getLogger(1, "LSP")
+log = getLogger(1, CURRENT_PACKAGE_NAME)
+
 
 from .plugin.core.main import startup, shutdown, LspStartClientCommand, LspRestartClientCommand
 
