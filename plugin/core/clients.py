@@ -212,4 +212,5 @@ def on_shutdown(client: Client, window_id: int, config_name: str, response):
 
 
 def unload_client(client: Client, window_id: int, config_name: str):
-    client.send_request(Request.shutdown(), lambda response: on_shutdown(client, window_id, config_name, response))
+    if client:
+        client.send_request(Request.shutdown(), lambda response: on_shutdown(client, window_id, config_name, response))
