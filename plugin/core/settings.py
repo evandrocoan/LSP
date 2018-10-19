@@ -162,7 +162,11 @@ class ClientConfigs(object):
         self.all = read_client_configs(self._global_settings, self._default_settings)
 
         client_enableds = list("=".join([config.name, str(config.enabled)]) for config in self.all)
-        log(1, 'global clients: %s', ", ".join(client_enableds))
+
+        if client_enableds:
+            log(1, 'global clients: %s', ", ".join(client_enableds))
+        else:
+            log(1, 'No LSP clients enabled.')
 
     def _set_enabled(self, config_name: str, is_enabled: bool):
         if _settings_obj:
