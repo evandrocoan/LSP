@@ -9,7 +9,7 @@
             "markupsafe",
             "pymdownx",
             "pyyaml",
-            "portalockerfiles",
+            "portalockerfile",
             "concurrentloghandler",
             "debugtools"
         ]
@@ -23,7 +23,7 @@
             "markupsafe",
             "pymdownx",
             "pyyaml",
-            "portalockerfiles",
+            "portalockerfile",
             "concurrentloghandler",
             "debugtools"
         ]
