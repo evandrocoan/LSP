@@ -2,12 +2,9 @@
 
 # Configuration
 
-
-## Sublime Settings
-
-*TODO: document any settings LSP depends on here*
-
 ## LSP Settings
+
+Global plugin settings and settings defined at project level are merged together.
 
 * `complete_all_chars` `true` *request completions for all characters, not just trigger characters*
 * `only_show_lsp_completions` `false` *disable sublime word completion and snippets from autocomplete lists*
@@ -15,8 +12,9 @@
 * `resolve_completion_for_snippets` `false` *resolve completions and apply snippet if received*
 * `show_status_messages` `true` *show messages in the status bar for a few seconds*
 * `show_view_status` `true` *show permanent language server status in the status bar*
-* `auto_show_diagnostics_panel` `true` *open and close the diagnostics panel automatically*
+* `auto_show_diagnostics_panel` `true` *open the diagnostics panel automatically if there are diagnostics*
 * `show_diagnostics_phantoms` `false` *show diagnostics as phantoms while the file has no changes*
+* `show_diagnostics_count_in_view_status` `false` *show errors and warnings count in the status bar*
 * `show_diagnostics_in_view_status` `true` *when on a diagnostic with the cursor, show the text in the status bar*
 * `diagnostics_highlight_style` `"underline"` *highlight style of code diagnostics, `"underline"` or `"box"`*
 * `highlight_active_signature_parameter`: *highlight the active parameter of the currently active signature*
@@ -30,35 +28,40 @@
 
 ## Language Specific Setup
 
-For any of these components it is important that Sublime Text can find the language server executable through the path, especially when using virtual environments.
+Install and verify Sublime Text can find the language server executable through the PATH, especially when using virtual environments with your interpreter.
 
-For autocomplete to trigger on eg. `.` or `->`, you may need to add the listed `auto_complete_triggers` to your User or Syntax-specific settings.
+Run "LSP: Enable Language Server" from Sublime's Command Palette to allow LSP to start a server when a document with a certain syntax is opened/activated.
+
+LSP registers a server's supported trigger characters with Sublime Text.
+If completion on `.` or `->`, is not working, you may need to add the listed `auto_complete_triggers` to your User or Syntax-specific settings.
 
 The default LSP.sublime-settings contains some default LSP client configuration that may not work for you. See [Client Config](#client-config) for explanations for the available settings.
 
 ### Javascript/Typescript<a name="jsts"></a>
 
-`npm install -g javascript-typescript-langserver`
+You need to have [tomv564/lsp-tsserver](https://github.com/tomv564/lsp-tsserver) installed globally for the completions to work.
 
-See: [github:sourcegraph/javascript-typescript-langserver](https://github.com/sourcegraph/javascript-typescript-langserver)
+`npm install -g lsp-tsserver`
 
-On windows you will need to override client config to launch `javascript-typescript-stdio.cmd` instead.
-
-See: [github](https://github.com/sourcegraph/javascript-typescript-langserver)
-
-Autocomplete triggers: in User or Syntax-specific settings, add:
+Client configuration:
 
 ```
-"auto_complete_triggers": [
-        {
-            "characters": ".",
-            "selector": "source.js"
-        },
-        {
-            "characters": ".",
-            "selector": "source.ts"
-        }
-]
+{
+    "js": {
+        "command": ["lsp-tsserver"],
+        "enabled": true,
+        "languageId": "javascript",
+        "scopes": ["source.js"],
+        "syntaxes": ["Packages/JavaScript/JavaScript.sublime-syntax"]
+    },
+    "jsts": {
+        "command": ["lsp-tsserver"],
+        "enabled": true,
+        "languageId": "typescript",
+        "scopes": ["source.ts", "source.tsx"],
+        "syntaxes": ["Packages/TypeScript-TmLanguage/TypeScript.tmLanguage", "Packages/TypeScript-TmLanguage/TypeScriptReact.tmLanguage"],
+    }
+}
 ```
 
 ### Flow (Javascript)<a name="flow"></a>
@@ -76,6 +79,32 @@ Client configuration:
       }
 ```
 
+### Vue (Javascript)<a name="vue"></a>
+
+See: [npm package](https://www.npmjs.com/package/vue-language-server)
+
+Client configuration:
+```
+"vue-ls":{
+  "command": [
+    "node",
+    "/ABSOLUTE/PATH/TO/SERVER/.npm-global/bin/vls"
+  ],
+  "enabled": true,
+  "languageId": "vue",
+  "scopes": [
+    "text.html.vue"
+  ],
+  "syntaxes": [
+    // For ST3 builds < 3153
+    "Packages/Vue Syntax Highlight/vue.tmLanguage"
+    // For ST3 builds >= 3153
+    // "Packages/Vue Syntax Highlight/Vue Component.sublime-syntax"
+  ]
+}
+```
+
+Be sure to install "Vue Syntax Highlight" from Package Control.
 
 ### Python<a name="python"></a>
 
@@ -83,15 +112,15 @@ Client configuration:
 
 See: [github:palantir/python-language-server](https://github.com/palantir/python-language-server)
 
-Autocomplete triggers: in User or Syntax-specific settings, add:
+Alternatively, Microsoft's python language server (using .NET Core runtime)
 
-```
-"auto_complete_triggers": [ {"selector": "source.python", "characters": "."} ],
-```
+[Instructions here](https://github.com/Microsoft/python-language-server/blob/master/Using_in_sublime_text.md)
 
 ### PHP<a name="php"></a>
 
 UPDATE: Some new options for PHP language servers are discussed in [this issue](https://github.com/tomv564/LSP/issues/259)
+
+#### PHP Language server
 
 1. modify `~/.composer/composer.json` to set
 ```
@@ -114,7 +143,7 @@ UPDATE: Some new options for PHP language servers are discussed in [this issue](
 }
 ```
 
-5. add triggers to `Preferences.sublime-settings - User`
+5. (optional) add triggers to `Preferences.sublime-settings - User`
 ```
 "auto_complete_triggers":
 [
@@ -128,18 +157,69 @@ UPDATE: Some new options for PHP language servers are discussed in [this issue](
 
 See: [github:felixfbecker/php-language-server](https://github.com/felixfbecker/php-language-server)
 
+#### Intelephense
+
+See [bmewburn/intelephense-server/](https://github.com/bmewburn/intelephense-server/)
+
+```json
+ "intelephense-ls":
+  {
+      // npm i -g intelephense-server
+      "enabled": true,
+      "command": [
+          "node",
+          "PATH_TO_GLOBAL_NODE_MODULES/intelephense-server/lib/server.js",
+          "--stdio",
+      ],
+      "scopes": ["source.php", "embedding.php"],
+      "syntaxes": ["Packages/PHP/PHP.sublime-syntax"],
+      "languageId": "php",
+      "initializationOptions": {
+          "storagePath": "PATH_TO_TEMP_FOLDER/intelephense-ls",
+      },
+  },
+```
+
+### Ruby / Ruby on Rails<a name="ruby"></a>
+
+Requires the solargraph gem:
+
+    gem install solargraph
+
+See [github.com:castwide/solargraph](https://github.com/castwide/solargraph) for up-to-date installation instructions.
+
+Client configuration:
+
+```
+"ruby": {
+	"command":
+	[
+		"solargraph",
+		"socket"
+	],
+	"enabled": true,
+	"languageId": "ruby",
+	"scopes":
+	[
+		"source.ruby",
+		"source.ruby.rails"
+	],
+	"syntaxes":
+	[
+		"Packages/Ruby/Ruby.sublime-syntax",
+		"Packages/Rails/Ruby on Rails.sublime-syntax",
+		"Packages/Rails/HTML (Rails).sublime-syntax"
+	],
+	"tcp_port": 7658
+},
+```
+
 
 ### Rust<a name="rust"></a>
 
 Requires Rust Nightly.
 
 See [github:rust-lang-nursery/rls](https://github.com/rust-lang-nursery/rls) for up-to-date installation instructions.
-
-Autocomplete triggers: in User or Syntax-specific settings, add:
-
-```
-"auto_complete_triggers": [ {"selector": "source.rust", "characters": ".:"} ]
-```
 
 
 ### Scala<a name="scala"></a>
@@ -160,12 +240,6 @@ Then the LSP plugin should launch as configured in LSP.sublime-settings using co
 ### C/C++ (Clangd)<a name="clang"></a>
 
 You will need to build from source, see [instructions](https://clang.llvm.org/extra/clangd.html)
-
-Autocomplete triggers: in User or Syntax-specific settings, add:
-
-```
-"auto_complete_triggers": [ {"selector": "source.c++", "characters": ".>:" }]
-```
 
 For any project of non-trivial size, you probably have a build system in place
 to compile your source files. The compilation command passed to your compiler
@@ -217,16 +291,34 @@ NOTE: This language server is missing completions and diagnostics support. You m
 See: [github:palantir/sourcegraphgo-langserver](https://github.com/sourcegraph/go-langserver)
 
 Client configuration:
-```
+```json
 "golsp":
 {
   "command": ["go-langserver"],
+  "enabled": true,
   "scopes": ["source.go"],
   "syntaxes": ["Packages/Go/Go.sublime-syntax"],
   "languageId": "go"
 },
 ```
 
+### CSS<a name="css"></a>
+
+Using the VS Code CSS language server:
+
+`npm install -g vscode-css-languageserver-bin`
+
+Then add to your LSP settings (replace PATH_TO_NODE_MODULES):
+
+```
+"vscode-css":
+  {
+    "command": ["node", "PATH_TO_NODE_MODULES/vscode-css-languageserver-bin/cssServerMain.js", "--stdio"],
+    "scopes": ["source.css"],
+    "syntaxes": ["Packages/CSS/CSS.sublime-syntax"],
+    "languageId": "css"
+  },
+```
 
 ### Polymer<a name="polymer"></a>
 
@@ -246,31 +338,135 @@ Features:
 More info: https://github.com/Polymer/polymer-editor-service
 
 
+### Dart<a name="dart"></a>
+
+`pub global activate dart_language_server`
+
+See: [natebosch/dart_language_server](https://github.com/natebosch/dart_language_server)
+
+Client configuration (replace PATH_TO_PUB_BIN):
+```
+"dart": {
+  "command": [
+    "PATH_TO_PUB_BIN/dart_language_server"
+  ],
+  "enabled": true,
+  "languageId": "dart",
+  "scopes": [
+    "source.dart"
+  ],
+  "syntaxes": [
+    "Packages/Dart/Dart.tmLanguage"
+  ]
+}
+```
+
+### Kotlin
+
+
+Install from [kotlin language server](https://github.com/fwcd/KotlinLanguageServer)
+Requires [building](https://github.com/fwcd/KotlinLanguageServer/blob/master/BUILDING.md) first.
+
+```json
+"kotlinls":
+{
+    "command":
+    [
+        "PATH_TO_KotlinLanguageServer/build/install/kotlin-language-server/bin/kotlin-language-server.bat" // adjust this path!
+    ],
+    "enabled": true,
+    "languageId": "kotlin",
+    "scopes":
+    [
+        "source.Kotlin"
+    ],
+    "syntaxes":
+    [
+        "Packages/kotlin/Kotlin.tmLanguage"
+    ]
+}
+```
+
+Additionally, install the [Kotlin sublime package](https://github.com/vkostyukov/kotlin-sublime-package) for syntax highlighting.
+
+### Bash
+
+Install the [bash language server](https://github.com/mads-hartmann/bash-language-server)
+
+```npm i -g bash-language-server```
+
+Settings:
+
+```json
+"bashls":
+{
+    "command":
+    [
+        "bash-language-server", // add .cmd on windows
+        "start"
+    ],
+    "enabled": true,
+    "languageId": "bash",
+    "scopes":
+    [
+        "source.shell.bash"
+    ],
+    "syntaxes":
+    [
+        "Packages/ShellScript/Bash.sublime-syntax"
+    ]
+}
+```
+
+
+### IntelliJ
+
+Requires IntelliJ to be running.
+
+```
+"intellij":{
+  "tcp_port": 8080 // default port
+  "command": [],
+  "languageId": "java",
+  "scopes": [
+    "source.java"
+  ],
+  "syntaxes": [
+    "Packages/Java/Java.sublime-syntax"
+  ]
+}
+```
+
 ### Other<a name="other"></a>
 
 Please create issues / pull requests so we can get support for more languages.
 
 ### Client Configuration<a name="client-config"></a>
 
-LSP ships with default client configuration for a few language servers. Here is an example for the Javascript/Typescript server:
+LSP ships with default client configuration for a few language servers.
+These configurations need to be enabled before they will start.
+
+Here is an example for the Javascript/Typescript server:
 
 ```json
 "jsts": {
-    "command": ["javascript-typescript-stdio"],
+    "command": ["lsp-tsserver"],
     "scopes": ["source.ts", "source.tsx"],
     "syntaxes": ["Packages/TypeScript-TmLanguage/TypeScript.tmLanguage", "Packages/TypeScript-TmLanguage/TypeScriptReact.tmLanguage"],
     "languageId": "typescript"
 }
 ```
 
-These can be customized as follows by adding an override in the User LSP.sublime-settings
+Client configurations can be customized as follows by adding an override in the User LSP.sublime-settings
 
-* `command` - specify a full paths, add arguments
+* `command` - specify a full paths, add arguments (if not specified then tcp_port must be specified)
+* `tcp_port` - if not specified then stdin/out are used else sets the tcpport to connect to (if no command is specified then it is assumed that some process is listing on this port)
 * `scopes` - add language flavours, eg. `source.js`, `source.jsx`.
 * `syntaxes` - syntaxes that enable LSP features on a document, eg. `Packages/Babel/JavaScript (Babel).tmLanguage`
 * `languageId` - used both by the language servers and to select a syntax highlighter for sublime popups.
-* `enabled` - disable a language server globally, or per-project
+* `enabled` - enable a language server globally, or per-project
 * `settings` - per-project settings (equivalent to VS Code's Workspace Settings)
+* `env` - dict of environment variables to be injected into the language server's process (eg. PYTHONPATH)
 * `initializationOptions` - options to send to the server at startup (rarely used)
 
 ## Per-project overrides
@@ -300,7 +496,6 @@ Any fields in a client configuration can be overridden by adding an LSP settings
     }
   }
 }
-
 ```
 
 
@@ -347,6 +542,14 @@ The following example overrides `f12` to use LSP's go to definition when in java
 		}
 	]
 }
+```
+
+More useful keybindings (OS-X), edit Package Settings -> LSP -> Key Bindings
+```
+  { "keys": ["f2"], "command": "lsp_symbol_rename" },
+  { "keys": ["f12"], "command": "lsp_symbol_definition" },
+  { "keys": ["super+option+r"], "command": "lsp_document_symbols" },
+  { "keys": ["super+option+h"], "command": "lsp_hover"}
 ```
 
 **Mouse map configuration**

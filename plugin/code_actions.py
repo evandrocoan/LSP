@@ -1,18 +1,17 @@
 import sublime
 
 try:
-    from typing import Any, List
-    assert Any and List
+    from typing import Any, List, Dict
+    assert Any and List and Dict
 except ImportError:
     pass
 
-
-from .core.clients import client_for_view
-from .core.clients import LspTextCommand
-from .core.protocol import Request, Range
+from .core.registry import client_for_view, LspTextCommand
+from .core.protocol import Request
 from .core.documents import get_position
 from .core.diagnostics import get_point_diagnostics
 from .core.url import filename_to_uri
+from .core.views import region_to_range
 
 
 class LspCodeActionsCommand(LspTextCommand):
@@ -36,7 +35,7 @@ class LspCodeActionsCommand(LspTextCommand):
                     "diagnostics": list(diagnostic.to_lsp() for diagnostic in point_diagnostics)
                 }
             }
-            params["range"] = Range.from_region(self.view, self.view.sel()[0]).to_lsp()
+            params["range"] = region_to_range(self.view, self.view.sel()[0]).to_lsp()
             if event:  # if right-clicked, set cursor to menu position
                 sel = self.view.sel()
                 sel.clear()
@@ -44,7 +43,7 @@ class LspCodeActionsCommand(LspTextCommand):
 
             client.send_request(Request.codeAction(params), self.handle_codeaction_response)
 
-    def handle_codeaction_response(self, response):
+    def handle_codeaction_response(self, response: 'List[Dict]') -> None:
         titles = []
         self.commands = response
         for command in self.commands:
@@ -55,7 +54,7 @@ class LspCodeActionsCommand(LspTextCommand):
         else:
             self.view.show_popup('No actions available', sublime.HIDE_ON_MOUSE_MOVE_AWAY)
 
-    def handle_select(self, index):
+    def handle_select(self, index: int) -> None:
         if index > -1:
             client = client_for_view(self.view)
             if client:

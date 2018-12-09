@@ -26,13 +26,20 @@ def create_output_panel(window: sublime.Window, name: str) -> sublime.View:
     return panel
 
 
+def destroy_output_panels(window: sublime.Window):
+    for panel_name in ["references", "diagnostics"]:
+        window.destroy_output_panel(panel_name)
+
+
 class LspClearPanelCommand(sublime_plugin.TextCommand):
     """
     A clear_panel command to clear the error panel.
     """
 
     def run(self, edit):
+        self.view.set_read_only(False)
         self.view.erase(edit, sublime.Region(0, self.view.size()))
+        self.view.set_read_only(True)
 
 
 class LspUpdatePanelCommand(sublime_plugin.TextCommand):
@@ -43,7 +50,6 @@ class LspUpdatePanelCommand(sublime_plugin.TextCommand):
     def run(self, edit, characters):
         self.view.replace(edit, sublime.Region(0, self.view.size()), characters)
 
-        # Move cursor to the end
+        # Clear the selection
         selection = self.view.sel()
         selection.clear()
-        selection.add(sublime.Region(self.view.size(), self.view.size()))

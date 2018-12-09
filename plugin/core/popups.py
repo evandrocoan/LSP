@@ -19,14 +19,28 @@ popup_css = '''
     .lsp_popup .errors {
         border-width: 0;
         background-color: color(var(--redish) alpha(0.25));
-        color: --whitish;
+        color: var(--whitish);
         margin-bottom: 0.5rem;
         padding: 0.5rem;
     }
     .lsp_popup .warnings {
         border-width: 0;
         background-color: color(var(--yellowish) alpha(0.25));
-        color: --whitish;
+        color: var(--whitish);
+        margin-bottom: 0.5rem;
+        padding: 0.5rem;
+    }
+    .lsp_popup .info {
+        border-width: 0;
+        background-color: color(var(--bluish) alpha(0.25));
+        color: var(--whitish);
+        margin-bottom: 0.5rem;
+        padding: 0.5rem;
+    }
+    .lsp_popup .hints {
+        border-width: 0;
+        background-color: color(var(--bluish) alpha(0.25));
+        color: var(--whitish);
         margin-bottom: 0.5rem;
         padding: 0.5rem;
     }

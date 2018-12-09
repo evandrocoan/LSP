@@ -2,10 +2,16 @@ import mdpopups
 import sublime
 import sublime_plugin
 import webbrowser
+from html import escape
+try:
+    from typing import List, Optional, Any, Dict
+    assert List and Optional and Any and Dict
+except ImportError:
+    pass
 
 from .core.configurations import is_supported_syntax
 from .core.diagnostics import get_point_diagnostics
-from .core.clients import LspTextCommand, client_for_view
+from .core.registry import session_for_view, LspTextCommand
 from .core.protocol import Request, DiagnosticSeverity
 from .core.documents import get_document_position
 from .core.popups import popup_css, popup_class
@@ -29,6 +35,17 @@ class HoverHandler(sublime_plugin.ViewEventListener):
         self.view.run_command("lsp_hover", {"point": point})
 
 
+_test_contents = []  # type: List[str]
+
+
+class_for_severity = {
+    DiagnosticSeverity.Error: 'errors',
+    DiagnosticSeverity.Warning: 'warnings',
+    DiagnosticSeverity.Information: 'info',
+    DiagnosticSeverity.Hint: 'hints'
+}
+
+
 class LspHoverCommand(LspTextCommand):
     def __init__(self, view):
         super().__init__(view)
@@ -46,16 +63,18 @@ class LspHoverCommand(LspTextCommand):
         if point_diagnostics:
             self.show_hover(point, self.diagnostics_content(point_diagnostics))
 
-    def request_symbol_hover(self, point):
-        client = client_for_view(self.view)
-        if client and client.has_capability('hoverProvider'):
-            document_position = get_document_position(self.view, point)
-            if document_position:
-                client.send_request(
-                    Request.hover(document_position),
-                    lambda response: self.handle_response(response, point))
+    def request_symbol_hover(self, point) -> None:
+        session = session_for_view(self.view, point)
+        if session:
+            if session.has_capability('hoverProvider'):
+                document_position = get_document_position(self.view, point)
+                if document_position:
+                    if session.client:
+                        session.client.send_request(
+                            Request.hover(document_position),
+                            lambda response: self.handle_response(response, point))
 
-    def handle_response(self, response, point):
+    def handle_response(self, response: 'Optional[Any]', point) -> None:
         all_content = ""
 
         point_diagnostics = get_point_diagnostics(self.view, point)
@@ -65,6 +84,8 @@ class LspHoverCommand(LspTextCommand):
         all_content += self.hover_content(point, response)
         all_content += self.symbol_actions_content()
 
+        _test_contents.clear()
+        _test_contents.append(all_content)  # for testing only
         self.show_hover(point, all_content)
 
     def symbol_actions_content(self):
@@ -75,33 +96,27 @@ class LspHoverCommand(LspTextCommand):
         actions.append("<a href='{}'>{}</a>".format('rename', 'Rename'))
         return "<p>" + " | ".join(actions) + "</p>"
 
+    def format_diagnostic(self, diagnostic):
+        if diagnostic.source:
+            return "<pre>[{}] {}</pre>".format(diagnostic.source, escape(diagnostic.message, False))
+        else:
+            return "<pre>{}</pre>".format(escape(diagnostic.message, False))
+
     def diagnostics_content(self, diagnostics):
-        formatted_errors = list(
-            "<pre>{}</pre>".format(diagnostic.message)
-            for diagnostic in diagnostics
-            if diagnostic.severity == DiagnosticSeverity.Error)
-        if len(formatted_errors) > 0:
-            formatted = ["<div class='errors'>"]
-            formatted.extend(formatted_errors)
-            formatted.append("<a href='{}'>{}</a>".format('code-actions',
-                                                          'Code Actions'))
-            formatted.append("</div>")
-
-        formatted_warnings = list(
-            "<pre>{}</pre>".format(diagnostic.message)
-            for diagnostic in diagnostics
-            if diagnostic.severity == DiagnosticSeverity.Warning)
-
-        if len(formatted_warnings) > 0:
-            formatted = ["<div class='warnings'>"]
-            formatted.extend(formatted_warnings)
+        by_severity = {}  # type: Dict[int, List[str]]
+        for diagnostic in diagnostics:
+            by_severity.setdefault(diagnostic.severity, []).append(self.format_diagnostic(diagnostic))
+        formatted = []
+        for severity, items in by_severity.items():
+            formatted.append("<div class='{}'>".format(class_for_severity[severity]))
+            formatted.extend(items)
             formatted.append("<a href='{}'>{}</a>".format('code-actions',
                                                           'Code Actions'))
             formatted.append("</div>")
 
         return "".join(formatted)
 
-    def hover_content(self, point, response):
+    def hover_content(self, point, response: 'Optional[Any]') -> str:
         contents = ["No description available."]
         if isinstance(response, dict):
             # Flow returns None sometimes

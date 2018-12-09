@@ -5,10 +5,11 @@ from debug_tools import getLogger
 log = getLogger(1, __package__)
 
 
-from .plugin.core.main import startup, shutdown, LspStartClientCommand, LspRestartClientCommand
+from .plugin.core.main import startup, shutdown
 
 # TODO: narrow down imports
 from .plugin.core.panels import *
+from .plugin.core.registry import LspRestartClientCommand
 from .plugin.core.documents import *
 from .plugin.core.edit import *
 from .plugin.completion import *
@@ -31,4 +32,4 @@ def plugin_loaded():
 
 def plugin_unloaded():
     shutdown()
-
+    remove_all_highlights()

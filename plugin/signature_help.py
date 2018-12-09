@@ -6,25 +6,22 @@ import re
 import html
 
 try:
-    from typing import Any, List, Dict
-    assert Any and List and Dict
+    from typing import Any, List, Dict, Optional
+    assert Any and List and Dict and Optional
 except ImportError:
     pass
 
-
 from debug_tools import getLogger
 
-
-from .core.clients import client_for_view
-from .core.documents import get_document_position, purge_did_change
-from .core.configurations import is_supported_syntax, config_for_scope
+from .core.configurations import is_supported_syntax
+from .core.registry import config_for_scope, session_for_view, client_for_view
+from .core.documents import get_document_position
+from .core.events import global_events
 from .core.protocol import Request
 from .core.popups import popup_css, popup_class
 from .core.settings import settings
 
-
 log = getLogger(1, __name__)
-
 
 class SignatureHelpListener(sublime_plugin.ViewEventListener):
 
@@ -44,9 +41,9 @@ class SignatureHelpListener(sublime_plugin.ViewEventListener):
         return syntax and is_supported_syntax(syntax)
 
     def initialize(self):
-        client = client_for_view(self.view)
-        if client:
-            signatureHelpProvider = client.get_capability(
+        session = session_for_view(self.view)
+        if session:
+            signatureHelpProvider = session.get_capability(
                 'signatureHelpProvider')
             if signatureHelpProvider:
                 self._signature_help_triggers = signatureHelpProvider.get(
@@ -54,7 +51,7 @@ class SignatureHelpListener(sublime_plugin.ViewEventListener):
 
         config = config_for_scope(self.view)
         if config:
-            self._language_id = config.languageId
+            self._language_id = self._view_language(self.view, config.name)
 
         self._initialized = True
 
@@ -67,14 +64,7 @@ class SignatureHelpListener(sublime_plugin.ViewEventListener):
         if self._signature_help_triggers:
             last_char = self.view.substr(pos - 1)
             if last_char in self._signature_help_triggers:
-                client = client_for_view(self.view)
-                if client:
-                    purge_did_change(self.view.buffer_id())
-                    document_position = get_document_position(self.view, pos)
-                    if document_position:
-                        client.send_request(
-                            Request.signatureHelp(document_position),
-                            lambda response: self.handle_response(response, pos))
+                self.request_signature_help(pos)
             elif self._visible:
                 if last_char.isspace():
                     # Peek behind to find the last non-whitespace character.
@@ -82,7 +72,17 @@ class SignatureHelpListener(sublime_plugin.ViewEventListener):
                 if last_char not in self._signature_help_triggers:
                     self.view.hide_popup()
 
-    def handle_response(self, response, point):
+    def request_signature_help(self, point) -> None:
+        client = client_for_view(self.view)
+        if client:
+            global_events.publish("view.on_purge_changes", self.view)
+            document_position = get_document_position(self.view, point)
+            if document_position:
+                client.send_request(
+                    Request.signatureHelp(document_position),
+                    lambda response: self.handle_response(response, point))
+
+    def handle_response(self, response: 'Optional[Dict]', point) -> None:
         if response is not None:
             self._signatures = response.get("signatures", [])
             self._active_signature = response.get("activeSignature", -1)
@@ -108,7 +108,11 @@ class SignatureHelpListener(sublime_plugin.ViewEventListener):
         if key != "lsp.signature_help":
             return False  # Let someone else handle this keybinding.
         elif not self._visible:
-            return False  # Let someone else handle this keybinding.
+            if operand == 0:
+                self.request_signature_help(self.view.sel()[0].begin())
+                return True
+            else:
+                return False  # Let someone else handle this keybinding.
         elif len(self._signatures) < 2:
             return False  # Let someone else handle this keybinding.
         else:
@@ -151,6 +155,10 @@ class SignatureHelpListener(sublime_plugin.ViewEventListener):
         else:
             # Default to "sublime".
             return self._build_popup_content_style_sublime()
+
+    def _view_language(self, view: sublime.View, config_name: str) -> 'Optional[str]':
+        languages = view.settings().get('lsp_language')
+        return languages.get(config_name) if languages else None
 
     def _on_hide(self):
         self._visible = False

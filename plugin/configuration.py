@@ -5,23 +5,30 @@ import webbrowser
 
 from .core.settings import ClientConfig, client_configs
 from .core.configurations import (
-    get_scope_client_config, config_for_scope, get_default_client_config, clear_window_client_configs
+    create_window_configs,
+    get_global_client_config
 )
-from .core.clients import unload_window_clients
-from .core.events import Events
+from .core.registry import config_for_scope, windows
+from .core.events import global_events
 from .core.workspace import enable_in_project, disable_in_project
+
+try:
+    from typing import List, Optional, Dict, Any
+    assert List and Optional and Dict and Any
+except ImportError:
+    pass
 
 
 def detect_supportable_view(view: sublime.View):
     config = config_for_scope(view)
     if not config:
-        available_config = get_default_client_config(view)
+        available_config = get_global_client_config(view)
         if available_config:
             show_enable_config(view, available_config)
 
 
-Events.subscribe("view.on_load_async", detect_supportable_view)
-Events.subscribe("view.on_activated_async", detect_supportable_view)
+global_events.subscribe("view.on_load_async", detect_supportable_view)
+global_events.subscribe("view.on_activated_async", detect_supportable_view)
 
 
 def extract_syntax_name(syntax_file: str) -> str:
@@ -38,65 +45,109 @@ def show_enable_config(view: sublime.View, config: ClientConfig):
         window.status_message(message)
 
 
-def start_view(view: sublime.View):
-    view.run_command('lsp_start_client')
-
-
 class LspEnableLanguageServerGloballyCommand(sublime_plugin.WindowCommand):
     def run(self):
-        view = self.window.active_view()
-        available_config = get_scope_client_config(view, client_configs.defaults) or get_default_client_config(view)
-        if available_config:
-            client_configs.enable(available_config.name)
-            clear_window_client_configs(self.window)
-            sublime.set_timeout_async(lambda: start_view(view), 500)
-            self.window.status_message("{} enabled, starting server...".format(available_config.name))
-            return
+        self._items = []  # type: List[List[str]]
+        for config in client_configs.all:
+            if not config.enabled:
+                self._items.append([
+                    config.name,
+                    ", ".join(language.id for language in config.languages)
+                ])
 
-        self.window.status_message("No config available to enable")
+        if len(self._items) > 0:
+            self.window.show_quick_panel(self._items, self._on_done)
+        else:
+            self.window.status_message("No config available to enable")
+
+    def _on_done(self, index):
+        if index > -1:
+            config_name = self._items[index][0]
+
+            # too much work
+            client_configs.enable(config_name)
+            wm = windows.lookup(self.window)
+            wm.update_configs(create_window_configs(self.window))
+
+            sublime.set_timeout_async(lambda: wm.start_active_views(), 500)
+            self.window.status_message("{} enabled, starting server...".format(config_name))
 
 
 class LspEnableLanguageServerInProjectCommand(sublime_plugin.WindowCommand):
     def run(self):
-        view = self.window.active_view()
+        self._items = []  # type: List[List[str]]
+        wm = windows.lookup(self.window)
+        for config in wm._configs.all:
+            # should also check if enabled here.
+            if not config.enabled:
+                self._items.append([
+                    config.name,
+                    ", ".join(language.id for language in config.languages)
+                ])
 
-        # if no default_config, nothing we can do.
-        default_config = get_default_client_config(view)
-        if default_config:
-            enable_in_project(self.window, default_config.name)
-            clear_window_client_configs(self.window)
-            sublime.set_timeout_async(lambda: start_view(view), 500)
-            self.window.status_message("{} enabled in project, starting server...".format(default_config.name))
+        if len(self._items) > 0:
+            self.window.show_quick_panel(self._items, self._on_done)
         else:
             self.window.status_message("No config available to enable")
+
+    def _on_done(self, index):
+        if index > -1:
+            config_name = self._items[index][0]
+            wm = windows.lookup(self.window)
+            enable_in_project(self.window, config_name)
+            wm.update_configs(create_window_configs(self.window))
+            sublime.set_timeout_async(lambda: wm.start_active_views(), 500)
+            self.window.status_message("{} enabled, starting server...".format(config_name))
 
 
 class LspDisableLanguageServerGloballyCommand(sublime_plugin.WindowCommand):
     def run(self):
-        view = self.window.active_view()
-        global_config = get_scope_client_config(view, client_configs.all)
-        if global_config:
-            client_configs.disable(global_config.name)
-            clear_window_client_configs(self.window)
-            sublime.set_timeout_async(lambda: unload_window_clients(self.window.id()), 500)
-            self.window.status_message("{} disabled, shutting down server...".format(global_config.name))
-            return
+        self._items = []  # type: List[List[str]]
+        for config in client_configs.all:
+            if config.enabled:
+                self._items.append([
+                    config.name,
+                    ", ".join(language.id for language in config.languages)
+                ])
 
-        self.window.status_message("No config available to disable")
+        if len(self._items) > 0:
+            self.window.show_quick_panel(self._items, self._on_done)
+        else:
+            self.window.status_message("No config available to disable")
+
+    def _on_done(self, index):
+        if index > -1:
+            config_name = self._items[index][0]
+            client_configs.disable(config_name)
+            wm = windows.lookup(self.window)
+            wm.update_configs(create_window_configs(self.window))
+            sublime.set_timeout_async(lambda: wm.end_session(config_name), 500)
+            self.window.status_message("{} disabled, shutting down server...".format(config_name))
 
 
 class LspDisableLanguageServerInProjectCommand(sublime_plugin.WindowCommand):
     def run(self):
-        view = self.window.active_view()
-        global_config = get_scope_client_config(view, client_configs.defaults)
-        if global_config:
-            disable_in_project(self.window, global_config.name)
-            clear_window_client_configs(self.window)
-            sublime.set_timeout_async(lambda: unload_window_clients(self.window.id()), 500)
-            self.window.status_message("{} disabled in project, shutting down server...".format(global_config.name))
-            return
+        wm = windows.lookup(self.window)
+        self._items = []  # type: List[List[str]]
+        for config in wm._configs.all:
+            if config.enabled:
+                self._items.append([
+                    config.name,
+                    ", ".join(language.id for language in config.languages)
+                ])
+
+        if len(self._items) > 0:
+            self.window.show_quick_panel(self._items, self._on_done)
         else:
             self.window.status_message("No config available to disable")
+
+    def _on_done(self, index):
+        if index > -1:
+            config_name = self._items[index][0]
+            wm = windows.lookup(self.window)
+            disable_in_project(self.window, config_name)
+            wm.update_configs(create_window_configs(self.window))
+            wm.end_session(config_name)
 
 
 supported_syntax_template = '''
@@ -120,7 +171,7 @@ class LspSetupLanguageServerCommand(sublime_plugin.WindowCommand):
     def run(self):
         view = self.window.active_view()
         syntax = view.settings().get("syntax")
-        available_config = get_default_client_config(view)
+        available_config = get_global_client_config(view)
 
         syntax_name = extract_syntax_name(syntax)
         title = "# Language Server for {}\n".format(syntax_name)

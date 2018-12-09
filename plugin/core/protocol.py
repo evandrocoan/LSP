@@ -1,11 +1,13 @@
-import sublime
 try:
     from typing import Any, List, Dict, Tuple, Callable, Optional
     assert Any and List and Dict and Tuple and Callable and Optional
 except ImportError:
     pass
 
-from collections import OrderedDict
+
+TextDocumentSyncKindNone = 0
+TextDocumentSyncKindFull = 1
+TextDocumentSyncKindIncremental = 2
 
 
 class DiagnosticSeverity(object):
@@ -55,6 +57,13 @@ class CompletionItemKind(object):
     Color = 16
     File = 17
     Reference = 18
+    Folder = 19
+    EnumMember = 20
+    Constant = 21
+    Struct = 22
+    Event = 23
+    Operator = 24
+    TypeParameter = 25
 
 
 class DocumentHighlightKind(object):
@@ -71,121 +80,136 @@ class Request:
         self.jsonrpc = "2.0"
 
     @classmethod
-    def initialize(cls, params: dict):
+    def initialize(cls, params: dict) -> 'Request':
         return Request("initialize", params)
 
     @classmethod
-    def hover(cls, params: dict):
+    def hover(cls, params: dict) -> 'Request':
         return Request("textDocument/hover", params)
 
     @classmethod
-    def complete(cls, params: dict):
+    def complete(cls, params: dict) -> 'Request':
         return Request("textDocument/completion", params)
 
     @classmethod
-    def signatureHelp(cls, params: dict):
+    def signatureHelp(cls, params: dict) -> 'Request':
         return Request("textDocument/signatureHelp", params)
 
     @classmethod
-    def references(cls, params: dict):
+    def references(cls, params: dict) -> 'Request':
         return Request("textDocument/references", params)
 
     @classmethod
-    def definition(cls, params: dict):
+    def definition(cls, params: dict) -> 'Request':
         return Request("textDocument/definition", params)
 
     @classmethod
-    def rename(cls, params: dict):
+    def rename(cls, params: dict) -> 'Request':
         return Request("textDocument/rename", params)
 
     @classmethod
-    def codeAction(cls, params: dict):
+    def codeAction(cls, params: dict) -> 'Request':
         return Request("textDocument/codeAction", params)
 
     @classmethod
-    def executeCommand(cls, params: dict):
+    def executeCommand(cls, params: dict) -> 'Request':
         return Request("workspace/executeCommand", params)
 
     @classmethod
-    def formatting(cls, params: dict):
+    def formatting(cls, params: dict) -> 'Request':
         return Request("textDocument/formatting", params)
 
     @classmethod
-    def rangeFormatting(cls, params: dict):
+    def rangeFormatting(cls, params: dict) -> 'Request':
         return Request("textDocument/rangeFormatting", params)
 
     @classmethod
-    def documentSymbols(cls, params: dict):
+    def documentSymbols(cls, params: dict) -> 'Request':
         return Request("textDocument/documentSymbol", params)
 
     @classmethod
-    def documentHighlight(cls, params: dict):
+    def documentHighlight(cls, params: dict) -> 'Request':
         return Request("textDocument/documentHighlight", params)
 
     @classmethod
-    def resolveCompletionItem(cls, params: dict):
+    def resolveCompletionItem(cls, params: dict) -> 'Request':
         return Request("completionItem/resolve", params)
 
     @classmethod
-    def shutdown(cls):
+    def shutdown(cls) -> 'Request':
         return Request("shutdown", None)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.method + " " + str(self.params)
 
-    def to_payload(self, id):
-        r = OrderedDict()  # type: OrderedDict[str, Any]
-        r["jsonrpc"] = "2.0"
-        r["id"] = id
-        r["method"] = self.method
+    def to_payload(self, id) -> 'Dict[str, Any]':
+        r = {
+            "jsonrpc": "2.0",
+            "id": id,
+            "method": self.method
+        }  # type: Dict[str, Any]
         if self.params is not None:
             r["params"] = self.params
-        else:
-            r["params"] = dict()
+        return r
+
+
+class Response:
+    def __init__(self, request_id: int, result: 'Dict[str, Any]') -> None:
+        self.request_id = request_id
+        self.result = result
+        self.jsonrpc = "2.0"
+
+    def to_payload(self) -> 'Dict[str, Any]':
+        r = {
+            "id": self.request_id,
+            "jsonrpc": self.jsonrpc,
+            "result": self.result
+        }
         return r
 
 
 class Notification:
-    def __init__(self, method, params):
+    def __init__(self, method: str, params: dict = {}) -> None:
         self.method = method
         self.params = params
         self.jsonrpc = "2.0"
 
     @classmethod
-    def initialized(cls):
-        return Notification("initialized", None)
+    def initialized(cls) -> 'Notification':
+        return Notification("initialized")
 
     @classmethod
-    def didOpen(cls, params: dict):
+    def didOpen(cls, params: dict) -> 'Notification':
         return Notification("textDocument/didOpen", params)
 
     @classmethod
-    def didChange(cls, params: dict):
+    def didChange(cls, params: dict) -> 'Notification':
         return Notification("textDocument/didChange", params)
 
     @classmethod
-    def didSave(cls, params: dict):
+    def didSave(cls, params: dict) -> 'Notification':
         return Notification("textDocument/didSave", params)
 
     @classmethod
-    def didClose(cls, params: dict):
+    def didClose(cls, params: dict) -> 'Notification':
         return Notification("textDocument/didClose", params)
 
     @classmethod
-    def didChangeConfiguration(cls, params: dict):
+    def didChangeConfiguration(cls, params: dict) -> 'Notification':
         return Notification("workspace/didChangeConfiguration", params)
 
     @classmethod
-    def exit(cls):
-        return Notification("exit", None)
+    def exit(cls) -> 'Notification':
+        return Notification("exit")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.method + " " + str(self.params)
 
-    def to_payload(self):
-        r = OrderedDict()  # type: OrderedDict[str, Any]
-        r["jsonrpc"] = "2.0"
-        r["method"] = self.method
+    def to_payload(self) -> 'Dict[str, Any]':
+        r = {
+            "jsonrpc": "2.0",
+            "method": self.method
+        }  # type: Dict[str, Any]
         if self.params is not None:
             r["params"] = self.params
         else:
@@ -198,25 +222,18 @@ class Point(object):
         self.row = int(row)
         self.col = int(col)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "{}:{}".format(self.row, self.col)
 
     @classmethod
     def from_lsp(cls, point: dict) -> 'Point':
         return Point(point['line'], point['character'])
 
-    def to_lsp(self) -> dict:
-        r = OrderedDict()  # type: OrderedDict[str, Any]
-        r['line'] = self.row
-        r['character'] = self.col
-        return r
-
-    @classmethod
-    def from_text_point(self, view: sublime.View, point: int) -> 'Point':
-        return Point(*view.rowcol(point))
-
-    def to_text_point(self, view) -> int:
-        return view.text_point(self.row, self.col)
+    def to_lsp(self) -> 'Dict[str, Any]':
+        return {
+            "line": self.row,
+            "character": self.col
+        }
 
 
 class Range(object):
@@ -224,32 +241,23 @@ class Range(object):
         self.start = start
         self.end = end
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "({} {})".format(self.start, self.end)
 
     @classmethod
     def from_lsp(cls, range: dict) -> 'Range':
         return Range(Point.from_lsp(range['start']), Point.from_lsp(range['end']))
 
-    def to_lsp(self) -> dict:
-        r = OrderedDict()  # type: OrderedDict[str, Any]
-        r['start'] = self.start.to_lsp()
-        r['end'] = self.end.to_lsp()
-        return r
-
-    @classmethod
-    def from_region(self, view: sublime.View, region: sublime.Region) -> 'Range':
-        return Range(
-            Point.from_text_point(view, region.begin()),
-            Point.from_text_point(view, region.end())
-        )
-
-    def to_region(self, view: sublime.View) -> sublime.Region:
-        return sublime.Region(self.start.to_text_point(view), self.end.to_text_point(view))
+    def to_lsp(self) -> 'Dict[str, Any]':
+        return {
+            'start': self.start.to_lsp(),
+            'end': self.end.to_lsp()
+        }
 
 
 class Diagnostic(object):
-    def __init__(self, message, range, severity, source, lsp_diagnostic):
+    def __init__(self, message: str, range: Range, severity: int,
+                 source: 'Optional[str]', lsp_diagnostic: dict) -> None:
         self.message = message
         self.range = range
         self.severity = severity
@@ -257,7 +265,7 @@ class Diagnostic(object):
         self._lsp_diagnostic = lsp_diagnostic
 
     @classmethod
-    def from_lsp(cls, lsp_diagnostic):
+    def from_lsp(cls, lsp_diagnostic: dict) -> 'Diagnostic':
         return Diagnostic(
             # crucial keys
             lsp_diagnostic['message'],
@@ -268,5 +276,5 @@ class Diagnostic(object):
             lsp_diagnostic
         )
 
-    def to_lsp(self):
+    def to_lsp(self) -> 'Dict[str, Any]':
         return self._lsp_diagnostic

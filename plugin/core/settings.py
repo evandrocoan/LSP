@@ -1,15 +1,14 @@
-import os
 import sublime
+from .types import Settings, ClientConfig, LanguageConfig
 
 from debug_tools import getLogger
 log = getLogger(1, __name__)
 
 PLUGIN_NAME = 'LSP'
 
-
 try:
-    from typing import List, Optional, Dict
-    assert List and Optional and Dict
+    from typing import List, Optional, Dict, Any
+    assert List and Optional and Dict and Any
 except ImportError:
     pass
 
@@ -17,6 +16,14 @@ except ImportError:
 def read_bool_setting(settings_obj: sublime.Settings, key: str, default: bool) -> bool:
     val = settings_obj.get(key)
     if isinstance(val, bool):
+        return val
+    else:
+        return default
+
+
+def read_int_setting(settings_obj: sublime.Settings, key: str, default: int) -> int:
+    val = settings_obj.get(key)
+    if isinstance(val, int):
         return val
     else:
         return default
@@ -38,112 +45,73 @@ def read_str_setting(settings_obj: sublime.Settings, key: str, default: str) -> 
         return default
 
 
-class Settings(object):
-
-    def __init__(self):
-        self.show_status_messages = True
-        self.show_view_status = True
-        self.auto_show_diagnostics_panel = True
-        self.show_diagnostics_phantoms = False
-        self.show_diagnostics_in_view_status = True
-        self.only_show_lsp_completions = False
-        self.diagnostics_highlight_style = "underline"
-        self.highlight_active_signature_parameter = True
-        self.document_highlight_style = "stippled"
-        self.document_highlight_scopes = {
-            "unknown": "text",
-            "text": "text",
-            "read": "markup.inserted",
-            "write": "markup.changed"
-        }
-        self.diagnostics_gutter_marker = "dot"
-        self.complete_all_chars = False
-        self.completion_hint_type = "auto"
-        self.resolve_completion_for_snippets = False
-        self.log_debug = True
-        self.log_server = True
-        self.log_stderr = False
-        self.log_payloads = False
-
-    def update(self, settings_obj: sublime.Settings):
-        self.show_status_messages = read_bool_setting(settings_obj, "show_status_messages", True)
-        self.show_view_status = read_bool_setting(settings_obj, "show_view_status", True)
-        self.auto_show_diagnostics_panel = read_bool_setting(settings_obj, "auto_show_diagnostics_panel", True)
-        self.show_diagnostics_phantoms = read_bool_setting(settings_obj, "show_diagnostics_phantoms", False)
-        self.show_diagnostics_in_view_status = read_bool_setting(settings_obj, "show_diagnostics_in_view_status", True)
-        self.diagnostics_highlight_style = read_str_setting(settings_obj, "diagnostics_highlight_style", "underline")
-        self.highlight_active_signature_parameter = read_bool_setting(settings_obj,
+def update_settings(settings: Settings, settings_obj: sublime.Settings):
+    settings.show_view_status = read_bool_setting(settings_obj, "show_view_status", True)
+    settings.auto_show_diagnostics_panel = read_bool_setting(settings_obj, "auto_show_diagnostics_panel", True)
+    settings.auto_show_diagnostics_panel_level = read_int_setting(settings_obj, "auto_show_diagnostics_panel_level", 3)
+    settings.show_diagnostics_phantoms = read_bool_setting(settings_obj, "show_diagnostics_phantoms", False)
+    settings.show_diagnostics_count_in_view_status = read_bool_setting(settings_obj,
+                                                                       "show_diagnostics_count_in_view_status", False)
+    settings.show_diagnostics_in_view_status = read_bool_setting(settings_obj, "show_diagnostics_in_view_status", True)
+    settings.show_diagnostics_severity_level = read_int_setting(settings_obj, "show_diagnostics_severity_level", 3)
+    settings.diagnostics_highlight_style = read_str_setting(settings_obj, "diagnostics_highlight_style", "underline")
+    settings.highlight_active_signature_parameter = read_bool_setting(settings_obj,
                                                                       "highlight_active_signature_parameter", True)
-        self.document_highlight_style = read_str_setting(settings_obj, "document_highlight_style", "stippled")
-        self.document_highlight_scopes = read_dict_setting(settings_obj, "document_highlight_scopes",
-                                                           self.document_highlight_scopes)
-        self.diagnostics_gutter_marker = read_str_setting(settings_obj, "diagnostics_gutter_marker", "dot")
-        self.only_show_lsp_completions = read_bool_setting(settings_obj, "only_show_lsp_completions", False)
-        self.complete_all_chars = read_bool_setting(settings_obj, "complete_all_chars", True)
-        self.completion_hint_type = read_str_setting(settings_obj, "completion_hint_type", "auto")
-        self.resolve_completion_for_snippets = read_bool_setting(settings_obj, "resolve_completion_for_snippets", False)
-        self.log_debug = read_bool_setting(settings_obj, "log_debug", False)
-        self.log_server = read_bool_setting(settings_obj, "log_server", True)
-        self.log_stderr = read_bool_setting(settings_obj, "log_stderr", False)
-        self.log_payloads = read_bool_setting(settings_obj, "log_payloads", False)
-        self.setLevel(self.log_debug, 2)
-        self.setLogFile(read_str_setting(settings_obj, "log_file", ""))
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
-        # log.clean( 1, "Testing it" )
+    settings.document_highlight_style = read_str_setting(settings_obj, "document_highlight_style", "stippled")
+    settings.document_highlight_scopes = read_dict_setting(settings_obj, "document_highlight_scopes",
+                                                           settings.document_highlight_scopes)
+    settings.diagnostics_gutter_marker = read_str_setting(settings_obj, "diagnostics_gutter_marker", "dot")
+    settings.only_show_lsp_completions = read_bool_setting(settings_obj, "only_show_lsp_completions", False)
+    settings.complete_all_chars = read_bool_setting(settings_obj, "complete_all_chars", True)
+    settings.completion_hint_type = read_str_setting(settings_obj, "completion_hint_type", "auto")
+    settings.complete_using_text_edit = read_bool_setting(settings_obj, "complete_using_text_edit", False)
+    settings.resolve_completion_for_snippets = read_bool_setting(settings_obj, "resolve_completion_for_snippets", False)
+    settings.log_debug = read_bool_setting(settings_obj, "log_debug", False)
+    settings.log_server = read_bool_setting(settings_obj, "log_server", True)
+    settings.log_stderr = read_bool_setting(settings_obj, "log_stderr", False)
+    settings.log_payloads = read_bool_setting(settings_obj, "log_payloads", False)
 
-    @staticmethod
-    def setLevel(enabled, level):
-        log._debug_level = log.debug_level | level if enabled else log.debug_level & ~level
-
-    @staticmethod
-    def setLogFile(file_path):
-        file_path = file_path.strip()
-
-        if file_path:
-            if os.path.isabs(file_path):
-                log.setup(file_path)
-            else:
-                new_path = os.path.join(sublime.packages_path(), "User", file_path)
-                log.setup(new_path)
-        else:
-            log.setup(file_path)
+    settings.setLevel(settings.log_debug, 2)
+    settings.setLogFile(read_str_setting(settings_obj, "log_file", ""))
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
+    # log.clean( 1, "Testing it" )
 
 
 class ClientConfigs(object):
@@ -151,18 +119,33 @@ class ClientConfigs(object):
     def __init__(self):
         self._default_settings = dict()  # type: Dict[str, dict]
         self._global_settings = dict()  # type: Dict[str, dict]
-        self.defaults = []  # type: List[ClientConfig]
+        self._external_configs = dict()  # type: Dict[str, ClientConfig]
         self.all = []  # type: List[ClientConfig]
 
     def update(self, settings_obj: sublime.Settings):
         self._default_settings = read_dict_setting(settings_obj, "default_clients", {})
         self._global_settings = read_dict_setting(settings_obj, "clients", {})
+        self.update_configs()
 
-        self.defaults = read_client_configs(self._default_settings)
-        self.all = read_client_configs(self._global_settings, self._default_settings)
+    def add_external_config(self, config: ClientConfig):
+        self._external_configs[config.name] = config
 
-        client_enableds = list("=".join([config.name, str(config.enabled)]) for config in self.all)
+    def update_configs(self):
+        self.all = []  # type: List[ClientConfig]
 
+        for config_name, config in self._external_configs.items():
+            user_settings = self._global_settings.get(config_name, dict())
+            global_config = update_client_config(config, user_settings)
+            self.all.append(global_config)
+
+        all_config_names = set(self._default_settings) | set(self._global_settings)
+        for config_name in all_config_names.difference(set(self._external_configs)):
+            merged_settings = self._default_settings.get(config_name, dict())
+            user_settings = self._global_settings.get(config_name, dict())
+            merged_settings.update(user_settings)
+            self.all.append(read_client_config(config_name, merged_settings))
+
+        client_enableds = list('{}={}'.format(c.name, c.enabled) for c in self.all)
         if client_enableds:
             log(1, 'global clients: %s', ", ".join(client_enableds))
         else:
@@ -191,9 +174,9 @@ def load_settings():
     global _settings_obj
     loaded_settings_obj = sublime.load_settings("LSP.sublime-settings")
     _settings_obj = loaded_settings_obj
-    settings.update(loaded_settings_obj)
+    update_settings(settings, loaded_settings_obj)
     client_configs.update(loaded_settings_obj)
-    loaded_settings_obj.add_on_change("_on_new_settings", lambda: settings.update(loaded_settings_obj))
+    loaded_settings_obj.add_on_change("_on_new_settings", lambda: update_settings(settings, loaded_settings_obj))
     loaded_settings_obj.add_on_change("_on_new_client_settings", lambda: client_configs.update(loaded_settings_obj))
 
 
@@ -203,22 +186,20 @@ def unload_settings():
         _settings_obj.clear_on_change("_on_new_client_settings")
 
 
-class ClientConfig(object):
-    def __init__(self, name, binary_args, tcp_port, scopes, syntaxes, languageId,
-                 enabled=True, init_options=dict(), settings=dict(), env=dict()):
-        self.name = name
-        self.binary_args = binary_args
-        self.tcp_port = tcp_port
-        self.scopes = scopes
-        self.syntaxes = syntaxes
-        self.languageId = languageId
-        self.enabled = enabled
-        self.init_options = init_options
-        self.settings = settings
-        self.env = env
+def read_language_config(config: dict) -> 'LanguageConfig':
+    language_id = config.get("languageId", "")
+    scopes = config.get("scopes", [])
+    syntaxes = config.get("syntaxes", [])
+    return LanguageConfig(language_id, scopes, syntaxes)
 
 
-def read_client_config(name, client_config):
+def read_language_configs(client_config: dict) -> 'List[LanguageConfig]':
+    return list(map(read_language_config, client_config.get("languages", [])))
+
+
+def read_client_config(name: str, client_config: 'Dict') -> ClientConfig:
+    languages = read_language_configs(client_config)
+
     return ClientConfig(
         name,
         client_config.get("command", []),
@@ -226,27 +207,28 @@ def read_client_config(name, client_config):
         client_config.get("scopes", []),
         client_config.get("syntaxes", []),
         client_config.get("languageId", ""),
-        client_config.get("enabled", True),
+        languages,
+        client_config.get("enabled", False),
         client_config.get("initializationOptions", dict()),
         client_config.get("settings", dict()),
-        client_config.get("env", dict())
+        client_config.get("env", dict()),
+        client_config.get("tcp_host", None)
     )
 
 
-def read_client_configs(client_settings, default_client_settings=None) -> 'List[ClientConfig]':
-    parsed_configs = []  # type: List[ClientConfig]
-    if isinstance(client_settings, dict):
-        for client_name, client_config in client_settings.items():
-
-            # start with default settings for this client if available
-            client_with_defaults = {}  # type: Dict[str, dict]
-            if default_client_settings and client_name in default_client_settings:
-                client_with_defaults = default_client_settings[client_name]
-            client_with_defaults.update(client_config)
-
-            config = read_client_config(client_name, client_with_defaults)
-            if config:
-                parsed_configs.append(config)
-        return parsed_configs
-    else:
-        raise ValueError("configs")
+def update_client_config(config: 'ClientConfig', settings: dict) -> 'ClientConfig':
+    default_language = config.languages[0]
+    return ClientConfig(
+        config.name,
+        settings.get("command", config.binary_args),
+        settings.get("tcp_port", config.tcp_port),
+        settings.get("scopes", default_language.scopes),
+        settings.get("syntaxes", default_language.syntaxes),
+        settings.get("languageId", default_language.id),
+        read_language_configs(settings) or config.languages,
+        settings.get("enabled", config.enabled),
+        settings.get("init_options", config.init_options),
+        settings.get("settings", config.settings),
+        settings.get("env", config.env),
+        settings.get("tcp_host", config.tcp_host)
+    )

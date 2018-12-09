@@ -10,12 +10,13 @@ except ImportError:
 from debug_tools import getLogger
 
 from .core.protocol import Request
+from .core.events import global_events
 from .core.settings import settings
-from .core.protocol import CompletionItemKind
-from .core.clients import client_for_view
+from .core.protocol import CompletionItemKind, Range
+from .core.registry import session_for_view, client_for_view
 from .core.configurations import is_supported_syntax
-from .core.documents import get_document_position, purge_did_change
-
+from .core.documents import get_document_position
+from .core.sessions import Session
 
 log = getLogger(1, __name__)
 
@@ -57,9 +58,9 @@ current_completion = None  # type: Optional[CompletionContext]
 
 
 def has_resolvable_completions(view):
-    client = client_for_view(view)
-    if client:
-        completionProvider = client.get_capability(
+    session = session_for_view(view)
+    if session:
+        completionProvider = session.get_capability(
             'completionProvider')
         if completionProvider:
             if completionProvider.get('resolveProvider', False):
@@ -92,11 +93,13 @@ class CompletionSnippetHandler(sublime_plugin.EventListener):
                     current_completion = None
 
     def resolve_completion(self, item, view):
-        client = client_for_view(view)
-        if not client:
+        session = session_for_view(view)
+        if not session:
+            return
+        if not session.client:
             return
 
-        client.send_request(
+        session.client.send_request(
             Request.resolveCompletionItem(item),
             lambda response: self.handle_resolve_response(response, view))
 
@@ -146,15 +149,42 @@ class CompletionHandler(sublime_plugin.ViewEventListener):
 
     def initialize(self):
         self.initialized = True
-        client = client_for_view(self.view)
-        if client:
-            completionProvider = client.get_capability(
+        session = session_for_view(self.view)
+        if session:
+            completionProvider = session.get_capability(
                 'completionProvider')
             if completionProvider:
                 self.enabled = True
                 self.trigger_chars = completionProvider.get(
                     'triggerCharacters') or []
                 self.has_resolve_provider = completionProvider.get('resolveProvider', False)
+                self.register_trigger_chars(session)
+
+    def _view_language(self, config_name: str) -> 'Optional[str]':
+        languages = self.view.settings().get('lsp_language')
+        return languages.get(config_name) if languages else None
+
+    def register_trigger_chars(self, session: Session) -> None:
+        completion_triggers = self.view.settings().get('auto_complete_triggers', [])
+        view_language = self._view_language(session.config.name)
+        if view_language:
+            for language in session.config.languages:
+                if language.id == view_language:
+                    for scope in language.scopes:
+                        # log(2, "registering", self.trigger_chars, "for", scope)
+                        scope_trigger = next(
+                            (trigger for trigger in completion_triggers if trigger.get('selector', None) == scope),
+                            None
+                        )
+                        if scope_trigger:
+                            scope_trigger['characters'] = "".join(self.trigger_chars)
+                        else:
+                            completion_triggers.append({
+                                'characters': "".join(self.trigger_chars),
+                                'selector': scope
+                            })
+
+            self.view.settings().set('auto_complete_triggers', completion_triggers)
 
     def is_after_trigger_character(self, location):
         if location > 0:
@@ -178,7 +208,8 @@ class CompletionHandler(sublime_plugin.ViewEventListener):
             self.state = CompletionState.CANCELLING
 
     def on_query_completions(self, prefix, locations):
-        if self.view.match_selector(locations[0], NO_COMPLETION_SCOPES):
+        if prefix != "" and self.view.match_selector(locations[0], NO_COMPLETION_SCOPES):
+            # log(2, 'discarding completion because no completion scope with prefix {}'.format(prefix))
             return (
                 [],
                 sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
@@ -219,7 +250,7 @@ class CompletionHandler(sublime_plugin.ViewEventListener):
             return
 
         if settings.complete_all_chars or self.is_after_trigger_character(locations[0]):
-            purge_did_change(view.buffer_id())
+            global_events.publish("view.on_purge_changes", self.view)
             document_position = get_document_position(view, locations[0])
             if document_position:
                 client.send_request(
@@ -244,23 +275,42 @@ class CompletionHandler(sublime_plugin.ViewEventListener):
         elif settings.completion_hint_type == "kind":
             kind = item.get("kind")
             if kind:
-                hint = completion_item_kind_names[kind]
-        # label is an alternative for insertText if insertText not provided
-        insert_text = item.get("insertText") or label
+                hint = completion_item_kind_names.get(kind)
+        # label is an alternative for insertText if neither textEdit nor insertText is provided
+        insert_text = self.text_edit_text(item) or item.get("insertText") or label
+        trigger = insert_text
         if len(insert_text) > 0 and insert_text[0] == '$':  # sublime needs leading '$' escaped.
-            insert_text = '\$' + insert_text[1:]
-        # only return label with a hint if available
-        return "\t  ".join((label, hint)) if hint else label, insert_text
+            insert_text = '\\$' + insert_text[1:]
+        # only return trigger with a hint if available
+        return "\t  ".join((trigger, hint)) if hint else trigger, insert_text
 
-    def handle_response(self, response: dict):
+    def text_edit_text(self, item) -> 'Optional[str]':
+        if settings.complete_using_text_edit:
+            # try to handle textEdit if present
+            text_edit = item.get("textEdit")
+            if text_edit:
+                edit_range, edit_text = text_edit.get("range"), text_edit.get("newText")
+                if edit_range and edit_text:
+                    edit_range = Range.from_lsp(edit_range)
+                    last_start = self.last_location - len(self.last_prefix)
+                    last_row, last_col = self.view.rowcol(last_start)
+                    if last_row == edit_range.start.row == edit_range.end.row and edit_range.start.col <= last_col:
+                        # sublime does not support explicit replacement with completion
+                        # at given range, but we try to trim the textEdit range and text
+                        # to the start location of the completion
+                        return edit_text[last_col - edit_range.start.col:]
+        return None
+
+    def handle_response(self, response: 'Optional[Dict]'):
         global resolvable_completion_items
 
         if self.state == CompletionState.REQUESTING:
-            items = response["items"] if isinstance(response,
-                                                    dict) else response
-            if len(items) > 1 and items[0].get("sortText") is not None:
-                # If the first item has a sortText value, assume all of them have a sortText value.
-                items = sorted(items, key=lambda item: item["sortText"])
+            items = []  # type: List[Dict]
+            if isinstance(response, dict):
+                items = response["items"]
+            elif isinstance(response, list):
+                items = response
+            items = sorted(items, key=lambda item: item.get("sortText") or item["label"])
             self.completions = list(self.format_completion(item) for item in items)
 
             if self.has_resolve_provider:
@@ -279,6 +329,7 @@ class CompletionHandler(sublime_plugin.ViewEventListener):
             if self.next_request:
                 prefix, locations = self.next_request
                 self.do_request(prefix, locations)
+                self.state = CompletionState.IDLE
         else:
             log(2, 'Got unexpected response while in state %s', self.state)
 

@@ -1,15 +1,16 @@
+import sublime
 import sublime_plugin
 
 from .core.configurations import is_supported_syntax
 from .core.protocol import Request, Range, DocumentHighlightKind
-from .core.clients import client_for_view
+from .core.registry import session_for_view, client_for_view
 from .core.documents import get_document_position
 from .core.settings import settings
+from .core.views import range_to_region
 
-import sublime  # only for typing
 try:
-    from typing import List, Dict
-    assert List and Dict
+    from typing import List, Dict, Optional
+    assert List and Dict and Optional
 except ImportError:
     pass
 
@@ -22,6 +23,18 @@ _kind2name = {
     DocumentHighlightKind.Read: "read",
     DocumentHighlightKind.Write: "write"
 }
+
+
+def remove_all_highlights():
+    for window in sublime.windows():
+        remove_highlights(window)
+
+
+def remove_highlights(window: sublime.Window):
+    for view in window.views():
+        if view.file_name():
+            for kind in settings.document_highlight_scopes.keys():
+                view.erase_regions("lsp_highlight_{}".format(kind))
 
 
 class DocumentHighlightListener(sublime_plugin.ViewEventListener):
@@ -41,20 +54,21 @@ class DocumentHighlightListener(sublime_plugin.ViewEventListener):
         if not self._initialized:
             self._initialize()
         if self._enabled:
-            self._clear_regions()
             if settings.document_highlight_style:
                 self._queue()
 
     def _initialize(self) -> None:
         self._initialized = True
-        client = client_for_view(self.view)
-        if client:
-            self._enabled = client.get_capability("documentHighlightProvider")
+        session = session_for_view(self.view)
+        if session:
+            self._enabled = session.get_capability("documentHighlightProvider")
 
     def _queue(self) -> None:
-        self._stored_point = self.view.sel()[0].begin()
-        current_point = self._stored_point
-        sublime.set_timeout_async(lambda: self._purge(current_point), 500)
+        current_point = self.view.sel()[0].begin()
+        if self._stored_point != current_point:
+            self._clear_regions()
+            self._stored_point = current_point
+            sublime.set_timeout_async(lambda: self._purge(current_point), 500)
 
     def _purge(self, current_point: int) -> None:
         if current_point == self._stored_point:
@@ -80,23 +94,29 @@ class DocumentHighlightListener(sublime_plugin.ViewEventListener):
                     request = Request.documentHighlight(params)
                     client.send_request(request, self._handle_response)
 
-    def _handle_response(self, response: list) -> None:
+    def _handle_response(self, response: 'Optional[List]') -> None:
         if not response:
             return
         kind2regions = {}  # type: Dict[str, List[sublime.Region]]
         for kind in range(0, 4):
             kind2regions[_kind2name[kind]] = []
         for highlight in response:
-            r = Range.from_lsp(highlight["range"]).to_region(self.view)
+            r = range_to_region(Range.from_lsp(highlight["range"]), self.view)
             kind = highlight.get("kind", DocumentHighlightKind.Unknown)
             kind2regions[_kind2name[kind]].append(r)
-        flags = sublime.DRAW_NO_FILL | sublime.DRAW_NO_OUTLINE
-        if settings.document_highlight_style == "underline":
-            flags |= sublime.DRAW_SOLID_UNDERLINE
-        elif settings.document_highlight_style == "stippled":
-            flags |= sublime.DRAW_STIPPLED_UNDERLINE
-        elif settings.document_highlight_style == "squiggly":
-            flags |= sublime.DRAW_SQUIGGLY_UNDERLINE
+        if settings.document_highlight_style == "fill":
+            flags = 0
+        elif settings.document_highlight_style == "box":
+            flags = sublime.DRAW_NO_FILL
+        else:
+            flags = sublime.DRAW_NO_FILL | sublime.DRAW_NO_OUTLINE
+            if settings.document_highlight_style == "underline":
+                flags |= sublime.DRAW_SOLID_UNDERLINE
+            elif settings.document_highlight_style == "stippled":
+                flags |= sublime.DRAW_STIPPLED_UNDERLINE
+            elif settings.document_highlight_style == "squiggly":
+                flags |= sublime.DRAW_SQUIGGLY_UNDERLINE
+
         self._clear_regions()
         for kind_str, regions in kind2regions.items():
             if regions:

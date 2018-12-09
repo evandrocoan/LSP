@@ -50,13 +50,6 @@
       "syntaxes": ["Packages/Python/Python.sublime-syntax"],
       "languageId": "python"
     },
-    "jsts":
-    {
-      "command": ["javascript-typescript-stdio"],
-      "scopes": ["source.ts", "source.tsx", "source.js", "source.jsx"],
-      "syntaxes": ["Packages/TypeScript-TmLanguage/TypeScript.tmLanguage", "Packages/TypeScript-TmLanguage/TypeScriptReact.tmLanguage", "Packages/Babel/JavaScript (Babel).sublime-syntax", "Packages/JavaScript/JavaScript.sublime-syntax"],
-      "languageId": "typescript"
-    },
     "rls":
     {
       "command": ["rustup", "run", "nightly", "rls"],
@@ -64,19 +57,103 @@
       "syntaxes": ["Packages/Rust/Rust.sublime-syntax", "Packages/Rust Enhanced/RustEnhanced.sublime-syntax"],
       "languageId": "rust"
     },
-    "dotty":
-    {
-      "command": ["coursier", "launch", "ch.epfl.lamp:dotty-language-server_0.2:0.2.0-RC1", "-M", "dotty.tools.languageserver.Main", "--", "-stdio"],
-      "scopes": ["source.scala"],
-      "syntaxes": ["Packages/Scala/Scala.sublime-syntax"],
-      "languageId": "scala"
-    },
     "clangd":
     {
       "command": ["clangd"],
-      "scopes": ["source.c", "source.c++", "source.objc", "source.objc++"],
-      "syntaxes": ["Packages/C++/C.sublime-syntax", "Packages/C++/C++.sublime-syntax", "Packages/Objective-C/Objective-C.sublime-syntax", "Packages/Objective-C/Objective-C++.sublime-syntax"],
-      "languageId": "objc++"
+      "languages": [{
+          "scopes": ["source.c"],
+          "syntaxes": ["Packages/C++/C.sublime-syntax"],
+          "languageId": "c"
+        },{
+          "scopes": ["source.c++"],
+          "syntaxes": ["Packages/C++/C++.sublime-syntax"],
+          "languageId": "cpp"
+        },{
+          "scopes": ["source.objc"],
+          "syntaxes": ["Packages/Objective-C/Objective-C.sublime-syntax"],
+          "languageId": "objective-c"
+        },{
+          "scopes": ["source.objc++"],
+          "syntaxes": ["Packages/Objective-C/Objective-C++.sublime-syntax"],
+          "languageId": "objective-cpp"
+        },
+      ]
+    },
+    "cquery":
+    {
+      "command":
+      [
+        "cquery",
+        "--log-all-to-stderr"
+      ],
+      "initializationOptions":
+      {
+        "cacheDirectory": "/tmp/cquery"
+      },
+      "languages":
+      [
+        {
+          "languageId": "c",
+          "scopes":
+          [
+            "source.c"
+          ],
+          "syntaxes":
+          [
+            "Packages/C++/C.sublime-syntax"
+          ]
+        },
+        {
+          "languageId": "cpp",
+          "scopes":
+          [
+            "source.c++"
+          ],
+          "syntaxes":
+          [
+            "Packages/C++/C++.sublime-syntax"
+          ]
+        },
+        {
+          "languageId": "objective-c",
+          "scopes":
+          [
+            "source.objc"
+          ],
+          "syntaxes":
+          [
+            "Packages/Objective-C/Objective-C.sublime-syntax"
+          ]
+        },
+        {
+          "languageId": "objective-cpp",
+          "scopes":
+          [
+            "source.objc++"
+          ],
+          "syntaxes":
+          [
+            "Packages/Objective-C/Objective-C++.sublime-syntax"
+          ]
+        }
+      ]
+    },
+    "haskell-ide-engine":
+    {
+      "command":
+      [
+        "hie",
+        "--lsp"
+      ],
+      "languageId": "haskell",
+      "scopes":
+      [
+        "source.haskell"
+      ],
+      "syntaxes":
+      [
+        "Packages/Haskell/Haskell.sublime-syntax"
+      ]
     },
     "cquery":
     {
@@ -113,6 +190,43 @@
         "nodePath": "/usr/local/bin/node"
       }
     },
+    "lsp-tsserver":
+    {
+      "command": ["lsp-tsserver"],
+      "languages": [{
+        "scopes": ["source.js", "source.jsx"],
+        "syntaxes": ["Packages/Babel/JavaScript (Babel).sublime-syntax", "Packages/JavaScript/JavaScript.sublime-syntax"],
+        "languageId": "javascript"
+      }, {
+        "scopes": ["source.ts", "source.tsx"],
+        "syntaxes": ["Typescript"],
+        "languageId": "typescript"
+      }
+      ]
+    },
+    "javascript-typescript-langserver":
+    {
+      "command": ["javascript-typescript-stdio"],
+      "languages": [{
+        "scopes": ["source.js", "source.jsx"],
+        "syntaxes": ["Javascript"],
+        "languageId": "javascript"
+      }, {
+        "scopes": ["source.ts", "source.tsx"],
+        "syntaxes": ["Typescript"],
+        "languageId": "typescript"
+      }
+      ]
+    },
+    "typescript-language-server":
+    {
+      "command": ["typescript-language-server", "--stdio"],
+      "languages": [{
+        "scopes": ["source.ts", "source.tsx"],
+        "syntaxes": ["Typescript"],
+        "languageId": "typescript"
+      }]
+    },
     "ocaml":
     {
       "command": ["ocaml-language-server", "--stdio"],
@@ -134,58 +248,35 @@
       "syntaxes": ["Packages/Java/Java.sublime-syntax"],
       "languageId": "java"
     },
-    "julials":
-    {
-      "command": ["bash", "PATH_TO_JULIA_SERVER/LanguageServer/contrib/languageserver.sh"],
-      "languageId": "julia",
-      "scopes": ["source.julia"],
-      "syntaxes": ["Packages/Julia/Julia.sublime-syntax"],
-      "settings": {"runlinter": true}
-    },
     "polymer-ide":
     {
       "command": ["polymer-editor-service"],
-      "scopes": [
-        "text.html.basic",
-        "text.html",
-        "source.html",
-        "source.js",
-        "source.css",
-        "source.json"
+      "languages": [{
+          "scopes": ["text.html", "text.html.basic", "source.html"],
+          "syntaxes": ["Packages/HTML/HTML.sublime-syntax"],
+          "languageId": "html"
+        },{
+          "scopes": ["source.js"],
+          "syntaxes": ["Packages/JavaScript/JavaScript.sublime-syntax"],
+          "languageId": "javascript"
+        },{
+          "scopes": ["source.css"],
+          "syntaxes": ["Packages/CSS/CSS.sublime-syntax"],
+          "languageId": "css"
+        },{
+          "scopes": ["source.json"],
+          "syntaxes": ["Packages/JavaScript/JSON.sublime-syntax"],
+          "languageId": "json"
+        }
       ],
-      "syntaxes": [
-        "Packages/HTML/HTML.sublime-syntax",
-        "Packages/CSS/CSS.sublime-syntax",
-        "Packages/JavaScript/JavaScript.sublime-syntax",
-        "Packages/JavaScript/JSON.sublime-syntax"
-      ],
-      "languageId": "javascript",
       "settings": {
         "polymer-ide": {
           "analyzeWholePackage": false,
           "fixOnSave": false
         }
       }
-    },
-    "rlang":
-    {
-      "command": ["R", "--quiet", "--slave", "-e", "languageserver::run()"],
-      "languageId": "r",
-      "scopes":
-      [
-        "source.r"
-      ],
-      "syntaxes":
-      [
-        "Packages/R/R.sublime-syntax",
-        "Packages/R-Box/syntax/R Extended.sublime-syntax"
-      ]
     }
   },
-
-  // Show activity messages in the status bar for a few seconds.
-  // Example: Starting pyls ...
-  "show_status_messages": true,
 
   // Show permanent language server status in the status bar.
   "show_view_status": true,
@@ -194,12 +285,31 @@
   // depending on available diagnostics.
   "auto_show_diagnostics_panel": false,
 
+  // Open the diagnostics panel automatically
+  // when diagnostics level is equal to or less than:
+  // error: 1
+  // warning: 2
+  // info: 3
+  // hint: 4
+  "auto_show_diagnostics_panel_level": 3,
+
   // Show in-line diagnostics using phantoms for unchanged files.
   "show_diagnostics_phantoms": false,
+
+  // Show errors and warnings count in the status bar
+  "show_diagnostics_count_in_view_status": false,
 
   // Show the diagnostics description of the code
   // under the cursor in status bar if available.
   "show_diagnostics_in_view_status": true,
+
+  // Show the diagnostics with level less than or equal to
+  // the given value.
+  // error: 1
+  // warning: 2
+  // info: 3
+  // hint: 4
+  "show_diagnostics_severity_level": 3,
 
   // Highlighting style of code diagnostics.
   // Valid values are "underline" or "box"
@@ -211,7 +321,7 @@
 
   // Highlighting style of "highlights": accentuating nearby text entities that
   // are related to the one under your cursor.
-  // Valid values are "underline", "stippled", "squiggly" or "".
+  // Valid values are "fill", "box", "underline", "stippled", "squiggly" or "".
   // When set to the empty string (""), no document highlighting is requested.
   "document_highlight_style": "",
 

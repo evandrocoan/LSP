@@ -3,6 +3,8 @@ import os
 import sublime
 import sublime_plugin
 
+from debug_tools import getLogger
+
 try:
     from typing import Any, List, Dict, Tuple, Callable, Optional
     assert Any and List and Dict and Tuple and Callable and Optional
@@ -11,11 +13,14 @@ except ImportError:
 
 from .core.settings import settings, PLUGIN_NAME
 from .core.protocol import Diagnostic, DiagnosticSeverity
-from .core.events import Events
+from .core.events import global_events
 from .core.configurations import is_supported_syntax
 from .core.diagnostics import DiagnosticsUpdate, get_window_diagnostics, get_line_diagnostics
 from .core.workspace import get_project_path
 from .core.panels import create_output_panel
+from .core.views import range_to_region
+
+log = getLogger(1, __name__)
 
 diagnostic_severity_names = {
     DiagnosticSeverity.Error: "error",
@@ -66,23 +71,22 @@ stylesheet = '''
             </style>
         '''
 
-UNDERLINE_FLAGS = (sublime.DRAW_SQUIGGLY_UNDERLINE
-                   | sublime.DRAW_NO_OUTLINE
-                   | sublime.DRAW_NO_FILL
-                   | sublime.DRAW_EMPTY_AS_OVERWRITE)
+UNDERLINE_FLAGS = (sublime.DRAW_SQUIGGLY_UNDERLINE | sublime.DRAW_NO_OUTLINE | sublime.DRAW_NO_FILL |
+                   sublime.DRAW_EMPTY_AS_OVERWRITE)
 
 BOX_FLAGS = sublime.DRAW_NO_FILL | sublime.DRAW_EMPTY_AS_OVERWRITE
 
 
 def create_phantom_html(text: str) -> str:
     global stylesheet
+    formatted = "<br>".join(html.escape(line, quote=False) for line in text.splitlines())
     return """<body id=inline-error>{}
                 <div class="error-arrow"></div>
                 <div class="error">
                     <span class="message">{}</span>
                     <a href="code-actions">Code Actions</a>
                 </div>
-                </body>""".format(stylesheet, html.escape(text, quote=False))
+                </body>""".format(stylesheet, formatted)
 
 
 def on_phantom_navigate(view: sublime.View, href: str, point: int):
@@ -94,7 +98,7 @@ def on_phantom_navigate(view: sublime.View, href: str, point: int):
 
 
 def create_phantom(view: sublime.View, diagnostic: Diagnostic) -> sublime.Phantom:
-    region = diagnostic.range.to_region(view)
+    region = range_to_region(diagnostic.range, view)
     # TODO: hook up hide phantom (if keeping them)
     content = create_phantom_html(diagnostic.message)
     return sublime.Phantom(
@@ -112,9 +116,12 @@ def format_severity(severity: int) -> str:
 def format_diagnostic(diagnostic: Diagnostic) -> str:
     location = "{:>8}:{:<4}".format(
         diagnostic.range.start.row + 1, diagnostic.range.start.col + 1)
-    message = diagnostic.message.replace("\n", " ").replace("\r", "")
-    return " {}\t{:<12}\t{:<10}\t{}".format(
-        location, diagnostic.source, format_severity(diagnostic.severity), message)
+    lines = diagnostic.message.splitlines()
+    formatted = " {}\t{:<12}\t{:<10}\t{}".format(
+        location, diagnostic.source, format_severity(diagnostic.severity), lines[0])
+    for line in lines[1:]:
+        formatted = formatted + "\n {:<12}\t{:<12}\t{:<10}\t{}".format("", "", "", line)
+    return formatted
 
 
 phantom_sets_by_buffer = {}  # type: Dict[int, sublime.PhantomSet]
@@ -144,7 +151,7 @@ def update_diagnostics_regions(view: sublime.View, diagnostics: 'List[Diagnostic
     if settings.show_diagnostics_phantoms and not view.is_dirty():
         regions = None
     else:
-        regions = list(diagnostic.range.to_region(view) for diagnostic in diagnostics
+        regions = list(range_to_region(diagnostic.range, view) for diagnostic in diagnostics
                        if diagnostic.severity == severity)
     if regions:
         scope_name = diagnostic_severity_scopes[severity]
@@ -158,12 +165,47 @@ def update_diagnostics_regions(view: sublime.View, diagnostics: 'List[Diagnostic
 def update_diagnostics_in_view(view: sublime.View, diagnostics: 'List[Diagnostic]'):
     if view and view.is_valid():
         update_diagnostics_phantoms(view, diagnostics)
-        for severity in range(DiagnosticSeverity.Error, DiagnosticSeverity.Information):
+        for severity in range(
+                DiagnosticSeverity.Error,
+                DiagnosticSeverity.Error + settings.show_diagnostics_severity_level):
             update_diagnostics_regions(view, diagnostics, severity)
 
 
-Events.subscribe("document.diagnostics",
-                 lambda update: handle_diagnostics(update))
+def update_diagnostics_in_status_bar(view: sublime.View):
+    errors = 0
+    warnings = 0
+
+    window = view.window()
+    if window:
+        diagnostics_by_file = get_window_diagnostics(window)
+
+        if diagnostics_by_file:
+            for file_path, source_diagnostics in diagnostics_by_file.items():
+
+                if source_diagnostics:
+                    for origin, diagnostics in source_diagnostics.items():
+                        for diagnostic in diagnostics:
+
+                            if diagnostic.severity == DiagnosticSeverity.Error:
+                                errors += 1
+                            if diagnostic.severity == DiagnosticSeverity.Warning:
+                                warnings += 1
+
+        if errors > 0 or warnings > 0:
+            count = 'E: {} W: {}'.format(errors, warnings)
+        else:
+            count = ""
+        view.set_status('lsp_errors_warning_count', count)
+
+
+def update_count_in_status_bar(view):
+    if settings.show_diagnostics_count_in_view_status:
+        update_diagnostics_in_status_bar(view)
+
+
+global_events.subscribe("document.diagnostics",
+                        lambda update: handle_diagnostics(update))
+global_events.subscribe("view.on_activated_async", update_count_in_status_bar)
 
 
 def handle_diagnostics(update: DiagnosticsUpdate):
@@ -171,6 +213,8 @@ def handle_diagnostics(update: DiagnosticsUpdate):
     view = window.find_open_file(update.file_path)
     if view:
         update_diagnostics_in_view(view, update.diagnostics)
+        if settings.show_diagnostics_count_in_view_status:
+            update_diagnostics_in_status_bar(view)
     update_diagnostics_panel(window)
 
 
@@ -234,44 +278,76 @@ def ensure_diagnostics_panel(window: sublime.Window):
 
 def update_diagnostics_panel(window: sublime.Window):
     assert window, "missing window!"
-    base_dir = get_project_path(window)
 
-    panel = ensure_diagnostics_panel(window)
-    assert panel, "must have a panel now!"
+    if not window.is_valid():
+        log(2, 'ignoring update to closed window')
+        return
+
+    base_dir = get_project_path(window)
 
     diagnostics_by_file = get_window_diagnostics(window)
     if diagnostics_by_file is not None:
+
         active_panel = window.active_panel()
         is_active_panel = (active_panel == "output.diagnostics")
-        panel.settings().set("result_base_dir", base_dir)
-        panel.set_read_only(False)
+
         if diagnostics_by_file:
+            panel = ensure_diagnostics_panel(window)
+            assert panel, "must have a panel now!"
+            panel.settings().set("result_base_dir", base_dir)
+
+            auto_open_panel = False
             to_render = []
             for file_path, source_diagnostics in diagnostics_by_file.items():
                 # print( "base_dir: " + base_dir )
                 # print( "file_path: " + file_path )
                 try:
                     relative_file_path = os.path.relpath(file_path, base_dir) if base_dir else file_path
-                    if source_diagnostics:
-                        to_render.append(format_diagnostics(relative_file_path, source_diagnostics))
                 except ValueError:
-                    pass
+                    relative_file_path = file_path
+                if source_diagnostics:
+                    formatted = format_diagnostics(relative_file_path, source_diagnostics)
+                    if formatted:
+                        to_render.append(formatted)
+                        if not auto_open_panel:
+                            auto_open_panel = has_relevant_diagnostics(source_diagnostics)
+
+            panel.set_read_only(False)
             panel.run_command("lsp_update_panel", {"characters": "\n".join(to_render)})
+            panel.set_read_only(True)
+
             if settings.auto_show_diagnostics_panel and not active_panel:
-                window.run_command("show_panel",
-                                   {"panel": "output.diagnostics"})
+                if auto_open_panel:
+                    window.run_command("show_panel",
+                                       {"panel": "output.diagnostics"})
+
         else:
-            panel.run_command("lsp_clear_panel")
-            if settings.auto_show_diagnostics_panel and is_active_panel:
-                window.run_command("hide_panel",
-                                   {"panel": "output.diagnostics"})
-        panel.set_read_only(True)
+            panel = window.find_output_panel("diagnostics")
+            if panel:
+                panel.run_command("lsp_clear_panel")
+                if is_active_panel:
+                    window.run_command("hide_panel",
+                                       {"panel": "output.diagnostics"})
+
+
+def has_relevant_diagnostics(origin_diagnostics):
+    for origin, diagnostics in origin_diagnostics.items():
+        for diagnostic in diagnostics:
+            log(2, 'severity check', diagnostic.severity, '<=', settings.auto_show_diagnostics_panel_level)
+            if diagnostic.severity <= settings.auto_show_diagnostics_panel_level:
+                return True
+
+    return False
 
 
 def format_diagnostics(file_path, origin_diagnostics):
-    content = " ◌ {}:\n".format(file_path)
+    content = ""
     for origin, diagnostics in origin_diagnostics.items():
         for diagnostic in diagnostics:
-            item = format_diagnostic(diagnostic)
-            content += item + "\n"
-    return content
+            if diagnostic.severity <= settings.show_diagnostics_severity_level:
+                item = format_diagnostic(diagnostic)
+                content += item + "\n"
+    if content:
+        return " ◌ {}:\n{}".format(file_path, content)
+    else:
+        return None
