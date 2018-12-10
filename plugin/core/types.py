@@ -9,9 +9,19 @@ except ImportError:
     Protocol = object  # type: ignore
 
 from debug_tools import getLogger
+from debug_tools.utilities import get_representation
 log = getLogger(1, __package__)
 
-class Settings(object):
+class SmartObject(object):
+
+    def __str__(self):
+        return get_representation(self, repr=str)
+
+    def __repr__(self):
+        return get_representation(self, repr=repr)
+
+
+class Settings(SmartObject):
 
     def __init__(self) -> None:
         self.show_status_messages = True
@@ -59,7 +69,7 @@ class Settings(object):
         else:
             log.setup(file_path)
 
-class ClientStates(object):
+class ClientStates(SmartObject):
     STARTING = 0
     READY = 1
     STOPPING = 2
@@ -72,14 +82,14 @@ def config_supports_syntax(config: 'ClientConfig', syntax: str) -> bool:
     return False
 
 
-class LanguageConfig(object):
+class LanguageConfig(SmartObject):
     def __init__(self, language_id: str, scopes: 'List[str]', syntaxes: 'List[str]') -> None:
         self.id = language_id
         self.scopes = scopes
         self.syntaxes = syntaxes
 
 
-class ClientConfig(object):
+class ClientConfig(SmartObject):
     def __init__(self, name: str, binary_args: 'List[str]', tcp_port: 'Optional[int]', scopes=[],
                  syntaxes=[], languageId: 'Optional[str]'=None,
                  languages: 'List[LanguageConfig]'=[], enabled: bool=True, init_options=dict(),
