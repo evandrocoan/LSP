@@ -379,7 +379,8 @@ class WindowManager(object):
             ]).format(config.name, str(e))
 
             self._configs.disable(config.name)
-            self._sublime.message_dialog(message)
+            log(1, message)
+            log.exception("Server will be disabled for this window")
 
         if session:
             log(2, "window %s added session %s", self._window.id(), config.name)
