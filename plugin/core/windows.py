@@ -368,6 +368,8 @@ class WindowManager(object):
         log(2, "starting in", project_path)
         session = None  # type: Optional[Session]
         try:
+            log(2, "project_path: %s", project_path)
+            log(2, "config: %s", config)
             session = self._start_session(self._window, project_path, config,
                                           lambda session: self._handle_session_started(session, project_path, config),
                                           lambda config_name: self._handle_session_ended(config_name))
