@@ -492,7 +492,7 @@ class WindowManager(object):
     def _handle_all_sessions_ended(self):
         log(2, 'clients for window %s unloaded', self._window.id())
         if self._restarting:
-            log(2, 'window %s sessions unloaded - restarting')
+            log(2, 'window %s sessions unloaded - restarting', self._window.id())
             self.start_active_views()
         elif not self._window.is_valid():
             log(2, 'window %s closed and sessions unloaded', self._window.id())
