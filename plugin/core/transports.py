@@ -4,7 +4,6 @@ import time
 import socket
 from queue import Queue
 import subprocess
-from .logging import exception_log, debug
 
 try:
     from typing import Callable, Dict, Any, Optional
@@ -12,6 +11,8 @@ try:
 except ImportError:
     pass
 
+from debug_tools import getLogger
+log = getLogger(1, __name__)
 
 ContentLengthHeader = b"Content-Length: "
 TCP_CONNECT_TIMEOUT = 5
@@ -43,7 +44,7 @@ STATE_CONTENT = 1
 
 def start_tcp_transport(port: int, host: 'Optional[str]'=None) -> 'Transport':
     start_time = time.time()
-    debug('connecting to {}:{}'.format(host or "localhost", port))
+    log(2, 'connecting to %s:%s', host or "localhost", port)
 
     while time.time() - start_time < TCP_CONNECT_TIMEOUT:
         try:
@@ -84,12 +85,12 @@ class TCPTransport(Transport):
             try:
                 received_data = self.socket.recv(4096)
             except Exception as err:
-                exception_log("Failure reading from socket", err)
+                log.exception("Failure reading from socket")
                 self.close()
                 break
 
             if not received_data:
-                debug("no data received, closing")
+                log(2, "no data received, closing")
                 self.close()
                 break
 
@@ -133,7 +134,7 @@ class TCPTransport(Transport):
                 try:
                     self.socket.sendall(bytes(message, 'UTF-8'))
                 except Exception as err:
-                    exception_log("Failure writing to socket", err)
+                    log.exception("Failure writing to socket")
                     self.close()
 
 
@@ -182,10 +183,10 @@ class StdioTransport(Transport):
 
             except IOError as err:
                 self.close()
-                exception_log("Failure reading stdout", err)
+                log.exception("Failure reading stdout")
                 break
 
-        debug("LSP stdout process ended.")
+        log(2, "LSP stdout process ended.")
 
     def send(self, message: str) -> None:
         self.send_queue.put(message)
@@ -200,5 +201,5 @@ class StdioTransport(Transport):
                     self.process.stdin.write(bytes(message, 'UTF-8'))
                     self.process.stdin.flush()
                 except (BrokenPipeError, OSError) as err:
-                    exception_log("Failure writing to stdout", err)
+                    log.exception("Failure writing to stdout")
                     self.close()

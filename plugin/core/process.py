@@ -1,8 +1,11 @@
-from .logging import debug, exception_log, server_log
+from .settings import PLUGIN_NAME
 import subprocess
 import os
 import shutil
 import threading
+
+from debug_tools import getLogger
+log = getLogger(1, __name__)
 
 try:
     from typing import Any, List, Dict, Tuple, Callable, Optional, Union
@@ -39,7 +42,7 @@ def start_server(server_binary_args: 'List[str]', working_dir: str,
         si = subprocess.STARTUPINFO()  # type: ignore
         si.dwFlags |= subprocess.SW_HIDE | subprocess.STARTF_USESHOWWINDOW  # type: ignore
 
-    debug("starting " + str(server_binary_args))
+    log(2, "starting " + str(server_binary_args))
 
     stderr_destination = subprocess.PIPE if attach_stderr else subprocess.DEVNULL
 
@@ -73,9 +76,9 @@ def log_stream(process: 'subprocess.Popen', stream) -> None:
                 decoded = content.decode("UTF-8")
             except UnicodeDecodeError:
                 decoded = content
-            server_log(decoded.strip())
+            log.clean(1, "%s server: %s", PLUGIN_NAME, decoded.strip())
         except IOError as err:
-            exception_log("Failure reading stream", err)
+            log.exception("Failure reading stream")
             return
 
-    debug("LSP stream logger stopped.")
+    log(2, "LSP stream logger stopped.")

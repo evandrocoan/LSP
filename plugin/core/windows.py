@@ -1,5 +1,4 @@
 from .events import global_events
-from .logging import debug
 from .types import ClientStates, ClientConfig, WindowLike, ViewLike, LanguageConfig, config_supports_syntax
 from .protocol import Notification, Response
 from .sessions import Session
@@ -15,6 +14,9 @@ try:
 except ImportError:
     pass
     Protocol = object  # type: ignore
+
+from debug_tools import getLogger
+log = getLogger(1, __name__)
 
 
 class ConfigRegistry(Protocol):
@@ -219,7 +221,7 @@ class WindowDocumentHandler(object):
         if file_name in self._document_states:
             del self._document_states[file_name]
             for session in self._get_applicable_sessions(view):
-                debug('closing', file_name, session.config.name)
+                log(2, 'closing', file_name, session.config.name)
                 if session.client:
                     params = {"textDocument": {"uri": filename_to_uri(file_name)}}
                     session.client.send_notification(Notification.didClose(params))
@@ -233,7 +235,7 @@ class WindowDocumentHandler(object):
                         params = {"textDocument": {"uri": filename_to_uri(file_name)}}
                         session.client.send_notification(Notification.didSave(params))
             else:
-                debug('document not tracked', file_name)
+                log(2, 'document not tracked', file_name)
 
     def handle_view_modified(self, view: ViewLike):
         if view.window() == self._window:
@@ -328,7 +330,7 @@ class WindowManager(object):
 
     def start_active_views(self):
         active_views = get_active_views(self._window)
-        debug('window {} starting {} initial views'.format(self._window.id(), len(active_views)))
+        log(2, 'window %s starting %s initial views', self._window.id(), len(active_views))
         for view in active_views:
             if view.file_name():
                 self._initialize_on_open(view)
@@ -346,24 +348,24 @@ class WindowManager(object):
                                    self._configs.syntax_configs(view))
 
         for config in startable_configs:
-            debug("window {} requests {} for {}".format(self._window.id(), config.name, view.file_name()))
+            log(2, "window %s requests %s for %s", self._window.id(), config.name, view.file_name())
             self._start_client(config)
 
     def _start_client(self, config: ClientConfig):
         project_path = get_project_path(self._window)
         if project_path is None:
-            debug('Cannot start without a project folder')
+            log(2, 'Cannot start without a project folder')
             return
 
         if not self._can_start_config(config.name):
-            debug('Already starting on this window:', config.name)
+            log(2, 'Already starting on this window:', config.name)
             return
 
         if not self._handlers.on_start(config.name, self._window):
             return
 
         self._window.status_message("Starting " + config.name + "...")
-        debug("starting in", project_path)
+        log(2, "starting in", project_path)
         session = None  # type: Optional[Session]
         try:
             session = self._start_session(self._window, project_path, config,
@@ -380,7 +382,7 @@ class WindowManager(object):
             self._sublime.message_dialog(message)
 
         if session:
-            debug("window {} added session {}".format(self._window.id(), config.name))
+            log(2, "window %s added session %s", self._window.id(), config.name)
             self._sessions[config.name] = session
 
     def _handle_message_request(self, params: dict, client: Client, request_id: int) -> None:
@@ -407,14 +409,14 @@ class WindowManager(object):
 
     def end_session(self, config_name: str) -> None:
         if config_name in self._sessions:
-            debug("unloading session", config_name)
+            log(2, "unloading session", config_name)
             self._sessions[config_name].end()
 
     def _end_old_sessions(self):
         current_project_path = get_project_path(self._window)
         if current_project_path != self._project_path:
-            debug('project path changed, ending existing sessions')
-            debug('new path = {}'.format(current_project_path))
+            log(2, 'project path changed, ending existing sessions')
+            log(2, 'new path = %s', current_project_path)
             self.end_sessions()
             self._project_path = current_project_path
 
@@ -473,24 +475,24 @@ class WindowManager(object):
                 self._sublime.set_timeout_async(lambda: self._check_window_closed(), 100)
 
     def _check_window_closed(self):
-        # debug('window {} check window closed closing={}, valid={}'.format(
-        # self._window.id(), self._is_closing, self._window.is_valid()))
+        # log(2, 'window %s check window closed closing=%s, valid=%s',
+        # self._window.id(), self._is_closing, self._window.is_valid())
 
         if not self._is_closing and not self._window.is_valid():
             self._handle_window_closed()
 
     def _handle_window_closed(self):
-        debug('window {} closed, ending sessions'.format(self._window.id()))
+        log(2, 'window %s closed, ending sessions', self._window.id())
         self._is_closing = True
         self.end_sessions()
 
     def _handle_all_sessions_ended(self):
-        debug('clients for window {} unloaded'.format(self._window.id()))
+        log(2, 'clients for window %s unloaded', self._window.id())
         if self._restarting:
-            debug('window {} sessions unloaded - restarting')
+            log(2, 'window %s sessions unloaded - restarting')
             self.start_active_views()
         elif not self._window.is_valid():
-            debug('window {} closed and sessions unloaded'.format(self._window.id()))
+            log(2, 'window %s closed and sessions unloaded', self._window.id())
             if self._on_closed:
                 self._on_closed()
 
@@ -501,7 +503,7 @@ class WindowManager(object):
             if view.file_name():
                 self._diagnostics.remove(view, config_name)
 
-        debug("session", config_name, "ended")
+        log(2, "session", config_name, "ended")
         if not self._sessions:
             self._handle_all_sessions_ended()
 

@@ -2,7 +2,6 @@ from .rpc import (format_request, Client)
 from .transports import Transport
 from .protocol import (Request, Notification)
 from .types import Settings
-from .logging import set_exception_logging
 import unittest
 import json
 try:
@@ -190,7 +189,7 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(len(client._response_handlers), 0)
 
     def test_handles_transport_closed_unexpectedly(self):
-        set_exception_logging(False)
+        # set_exception_logging(False)
         transport = MockTransport(raise_error)
         settings = MockSettings()
         client = Client(transport, settings)
@@ -201,7 +200,7 @@ class ClientTest(unittest.TestCase):
         self.assertGreater(len(errors), 0)
 
     def test_survives_handler_error(self):
-        set_exception_logging(False)
+        # set_exception_logging(False)
         transport = MockTransport(return_empty_dict_result)
         settings = MockSettings()
         client = Client(transport, settings)

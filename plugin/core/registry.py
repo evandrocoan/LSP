@@ -10,10 +10,12 @@ from .clients import (
 )
 from .types import ClientStates, ClientConfig
 from .handlers import LanguageHandler
-from .logging import debug
 from .sessions import Session
 from .clients import Client
 from .settings import settings, client_configs
+
+from debug_tools import getLogger
+log = getLogger(1, __name__)
 
 try:
     from typing import Optional, List, Callable, Dict, Any
@@ -46,7 +48,7 @@ def load_handlers():
 
 
 def register_language_handler(handler: LanguageHandler) -> None:
-    debug("received config {} from {}".format(handler.name, handler.__class__.__name__))
+    log(2, "received config %s from %s", handler.name, handler.__class__.__name__)
     client_configs.add_external_config(handler.config)
     if handler.on_start:
         client_start_listeners[handler.name] = handler.on_start
@@ -65,12 +67,12 @@ def session_for_view(view: sublime.View, point: 'Optional[int]'=None) -> 'Option
 def _session_for_view_and_window(view: sublime.View, window: 'Optional[sublime.Window]',
                                  point=None) -> 'Optional[Session]':
     if not window:
-        debug("no window for view", view.file_name())
+        log(2, "no window for view", view.file_name())
         return None
 
     config = config_for_scope(view, point)
     if not config:
-        debug("no config found or enabled for view", view.file_name())
+        log(2, "no config found or enabled for view", view.file_name())
         return None
 
     session = windows.lookup(window).get_session(config.name)
@@ -87,11 +89,11 @@ def _client_for_view_and_window(view: sublime.View, window: 'Optional[sublime.Wi
         if session.client:
             return session.client
         else:
-            debug(session.config.name, "in state", session.state, " for view",
+            log(2, session.config.name, "in state", session.state, " for view",
                   view.file_name())
             return None
     else:
-        debug('no session found')
+        log(2, 'no session found')
         return None
 
 
