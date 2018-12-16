@@ -2,30 +2,30 @@
     "windows": {
         ">3000": [
             "python-pywin32",
+            "portalockerfile",
+            "concurrentloghandler",
+            "debugtools",
             "pygments",
             "python-markdown",
             "mdpopups",
             "python-jinja2",
             "markupsafe",
             "pymdownx",
-            "pyyaml",
-            "portalockerfile",
-            "concurrentloghandler",
-            "debugtools"
+            "pyyaml"
         ]
     },
     "*": {
         ">=3124": [
             "pygments",
+            "portalockerfile",
+            "concurrentloghandler",
+            "debugtools",
             "python-markdown",
             "mdpopups",
             "python-jinja2",
             "markupsafe",
             "pymdownx",
-            "pyyaml",
-            "portalockerfile",
-            "concurrentloghandler",
-            "debugtools"
+            "pyyaml"
         ]
     }
 }
