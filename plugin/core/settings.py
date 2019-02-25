@@ -108,7 +108,11 @@ class ClientConfigs(object):
             merged_settings.update(user_settings)
             self.all.append(read_client_config(config_name, merged_settings))
 
-        client_enableds = list('{}={}'.format(c.name, c.enabled) for c in self.all)
+        if settings.log_debug:
+            client_enableds = list('{}={}'.format(c.name, c.enabled) for c in self.all)
+        else:
+            client_enableds = list('{}={}'.format(c.name, c.enabled) for c in self.all if c.enabled)
+
         if client_enableds:
             log(1, 'global clients: %s', ", ".join(client_enableds))
         else:
