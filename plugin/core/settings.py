@@ -73,6 +73,7 @@ def update_settings(settings: Settings, settings_obj: sublime.Settings):
     settings.log_payloads = read_bool_setting(settings_obj, "log_payloads", False)
 
     settings.setLevel(settings.log_debug, 2)
+    settings.setLevel(settings.log_server, 4)
     settings.setLogFile(read_str_setting(settings_obj, "log_file", ""))
 
 
