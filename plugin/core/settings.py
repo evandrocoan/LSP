@@ -5,6 +5,7 @@ from debug_tools import getLogger
 log = getLogger(1, __name__)
 
 PLUGIN_NAME = 'LSP'
+g_is_settings_load_first_time = True
 
 try:
     from typing import List, Optional, Dict, Any
@@ -113,10 +114,17 @@ class ClientConfigs(object):
         else:
             client_enableds = list('{}={}'.format(c.name, c.enabled) for c in self.all if c.enabled)
 
-        if client_enableds:
-            log(1, 'global clients: %s', ", ".join(client_enableds))
+        global g_is_settings_load_first_time
+
+        if g_is_settings_load_first_time:
+            g_is_settings_load_first_time = False
+
         else:
-            log(1, 'No LSP clients enabled.')
+
+            if client_enableds:
+                log(1, 'global clients: %s', ", ".join(client_enableds))
+            else:
+                log(1, 'No LSP clients enabled.')
 
     def _set_enabled(self, config_name: str, is_enabled: bool):
         if _settings_obj:
