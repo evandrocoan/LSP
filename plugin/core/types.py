@@ -84,7 +84,7 @@ def config_supports_syntax(config: 'ClientConfig', syntax: str) -> bool:
             if re.search(regex, syntax, re.IGNORECASE):
                 return True
         except:
-            print('regex', regex, 'syntax', syntax)
+            log.exception('regex', regex, 'syntax', syntax)
     return False
 
 
