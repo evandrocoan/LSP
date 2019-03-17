@@ -78,8 +78,12 @@ class ClientStates(SmartObject):
 
 def config_supports_syntax(config: 'ClientConfig', syntax: str) -> bool:
     for language in config.languages:
-        if re.search(r'|'.join(r'\b%s\b' % re.escape(s) for s in language.syntaxes), syntax, re.IGNORECASE):
-            return True
+        try:
+            regex = r'|'.join(r'\b%s\b' % re.escape(s) for s in language.syntaxes)
+            if re.search(regex, syntax, re.IGNORECASE):
+                return True
+        except:
+            print('regex', regex, 'syntax', syntax)
     return False
 
 
