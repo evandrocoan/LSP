@@ -56,7 +56,10 @@ class SignatureHelpListener(sublime_plugin.ViewEventListener):
         self._initialized = True
 
     def on_modified_async(self):
-        pos = self.view.sel()[0].begin()
+        selection = self.view.sel()
+        if not len( selection ):
+            return
+        pos = selection[0].begin()
         # TODO: this will fire too often, narrow down using scopes or regex
         if not self._initialized:
             self.initialize()
