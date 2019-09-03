@@ -169,6 +169,10 @@ class CompletionHandler(sublime_plugin.ViewEventListener):
         completion_triggers = self.view.settings().get('auto_complete_triggers', [])
         view_language = self._view_language(session.config.name)
         if view_language:
+            # print("session.config", session.config)
+            if not session.config.settings.get('register_trigger_chars', True):
+                return
+
             for language in session.config.languages:
                 if language.id == view_language:
                     for scope in language.scopes:
