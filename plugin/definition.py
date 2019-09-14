@@ -42,12 +42,17 @@ class LspSymbolDefinitionCommand(LspTextCommand):
             # save to jump back history
             get_jump_history_for_view(self.view).push_selection(self.view)
 
+            # https://github.com/SublimeTextIssues/Core/issues/1482
+            group, view_index = window.get_view_index(self.view)
+            window.set_view_index(self.view, group, 0)
+
             location = response if isinstance(response, dict) else response[0]
             file_path = uri_to_filename(location.get("uri"))
             start = Point.from_lsp(location['range']['start'])
             file_location = "{}:{}:{}".format(file_path, start.row + 1, start.col + 1)
             log(2, "opening location %s <%s>", location, file_location)
             window.open_file(file_location, sublime.ENCODED_POSITION)
+            window.set_view_index(self.view, group, view_index)
             # TODO: can add region here.
         else:
             window.run_command("goto_definition")
