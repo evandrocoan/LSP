@@ -170,6 +170,8 @@ class CompletionHandler(sublime_plugin.ViewEventListener):
         view_language = self._view_language(session.config.name)
         if view_language:
             # print("session.config", session.config)
+            # https://github.com/tomv564/LSP/issues/685
+            # https://github.com/evandrocoan/User/commit/ea83aa4979b5e5b92741adf29fcbf01b8944543e
             if not session.config.settings.get('register_trigger_chars', True):
                 return
 
