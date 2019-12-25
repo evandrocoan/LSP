@@ -71,6 +71,7 @@ As-you-type diagnostics with support for code fixes (`F4` to select, `super+.` t
 search for **`LSP`** and press <kbd>Enter</kbd>
 
 See also:
+
 1. [ITE - Integrated Toolset Environment](https://github.com/evandrocoan/ITE)
 1. [Package control docs](https://packagecontrol.io/docs/usage) for details.
 
