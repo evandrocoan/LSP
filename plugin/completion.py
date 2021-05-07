@@ -21,7 +21,6 @@ from .core.sessions import Session
 log = getLogger(1, __name__)
 
 
-NO_COMPLETION_SCOPES = 'comment, string'
 completion_item_kind_names = {v: k for k, v in CompletionItemKind.__dict__.items()}
 
 
@@ -215,13 +214,6 @@ class CompletionHandler(sublime_plugin.ViewEventListener):
             self.state = CompletionState.CANCELLING
 
     def on_query_completions(self, prefix, locations):
-        if prefix != "" and self.view.match_selector(locations[0], NO_COMPLETION_SCOPES):
-            # log(2, 'discarding completion because no completion scope with prefix {}'.format(prefix))
-            return (
-                [],
-                sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
-            )
-
         if not self.initialized:
             self.initialize()
 
