@@ -116,6 +116,9 @@
   // Disable Sublime Text's snippet completions.
   "inhibit_snippet_completions": false,
 
+  // Disable Language server trigger chars registration: https://github.com/sublimelsp/LSP/issues/685
+  "register_trigger_chars": false,
+
   // Disable Sublime Text's word completions. When set to `true`, this also disables Sublime Text's internal completion
   // sorting algorithm and instead uses the sorting defined by the relevant language server.
   "inhibit_word_completions": false,
