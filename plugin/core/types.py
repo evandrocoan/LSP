@@ -205,6 +205,7 @@ class Settings:
     show_code_actions = None  # type: str
     show_code_lens = None  # type: str
     show_code_actions_in_hover = None  # type: bool
+    register_trigger_chars = None  # type: bool
     show_diagnostics_count_in_view_status = None  # type: bool
     show_multiline_diagnostics_highlights = None  # type: bool
     show_diagnostics_in_view_status = None  # type: bool
@@ -240,6 +241,7 @@ class Settings:
         r("show_code_actions", "annotation")
         r("show_code_lens", "annotation")
         r("show_code_actions_in_hover", True)
+        r("register_trigger_chars", False)
         r("show_diagnostics_count_in_view_status", False)
         r("show_diagnostics_in_view_status", True)
         r("show_multiline_diagnostics_highlights", True)
@@ -274,7 +276,7 @@ class Settings:
             self.inhibit_word_completions = only_show_lsp_completions
         else:
             r("inhibit_snippet_completions", False)
-            r("inhibit_word_completions", True)
+            r("inhibit_word_completions", False)
 
         # correctness checking will happen inside diagnostics_highlight_style_flags method
         self.diagnostics_highlight_style = s.get("diagnostics_highlight_style")  # type: ignore
