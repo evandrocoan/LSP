@@ -690,8 +690,8 @@ class DocumentSyncListener(sublime_plugin.ViewEventListener, AbstractViewListene
             items.extend(
                 format_completion(response_item, index, can_resolve_completion_items, session.config.name)
                 for index, response_item in enumerate(response_items))
-        if items:
-            flags |= sublime.INHIBIT_REORDER
+        # if items:
+        #     flags |= sublime.INHIBIT_REORDER
         if errors:
             error_messages = ", ".join(str(error) for error in errors)
             sublime.status_message('Completion error: {}'.format(error_messages))

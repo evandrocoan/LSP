@@ -275,7 +275,7 @@ class Settings:
             self.inhibit_word_completions = only_show_lsp_completions
         else:
             r("inhibit_snippet_completions", False)
-            r("inhibit_word_completions", True)
+            r("inhibit_word_completions", False)
 
         # Backwards-compatible with "diagnostics_highlight_style"
         diagnostics_highlight_style = s.get("diagnostics_highlight_style")
