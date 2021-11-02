@@ -431,6 +431,15 @@ class DocumentSyncListener(sublime_plugin.ViewEventListener, AbstractViewListene
 
         clist = sublime.CompletionList()
         sublime.set_timeout_async(lambda: self._on_query_completions_async(partial(resolve, clist), locations[0]))
+        # https://github.com/sublimehq/sublime_text/issues/4999
+        # Returning a CompletionList() on on_query_completions always do INHIBIT_WORD_COMPLETIONS
+        prefs = userprefs()
+        flags = 0
+        if prefs.inhibit_snippet_completions:
+            flags |= sublime.INHIBIT_EXPLICIT_COMPLETIONS
+        if prefs.inhibit_word_completions:
+            flags |= sublime.INHIBIT_WORD_COMPLETIONS
+        sublime.set_timeout(lambda: clist.set_completions([], flags))
         return clist
 
     # --- textDocument/signatureHelp -----------------------------------------------------------------------------------
